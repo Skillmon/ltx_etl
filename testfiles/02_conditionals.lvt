@@ -143,4 +143,28 @@
     \test_aux:nn { ~\empty{\scan_stop:}~ } { \scan_stop: }
   }
 
+\OMIT
+\cs_set:Npn \test_aux:nn #1#2
+  { \etl_token_if_in:nNTF {#1} #2 \TRUE \FALSE \NEWLINE }
+\TIMO
+
+\TESTEXP{token~ if~ in}
+  {
+    \test_aux:nn { a{b}~c } a
+    \test_aux:nn { a{b}~c } b
+    \test_aux:nn { \scan_stop:{b}~c } \scan_stop:
+  }
+
+\OMIT
+\cs_set:Npn \test_aux:nn #1#2
+  { \etl_token_if_in_deep:nNTF {#1} #2 \TRUE \FALSE \NEWLINE }
+\TIMO
+
+\TESTEXP{token~ if~ in~ deep}
+  {
+    \test_aux:nn { a{b}~c } a
+    \test_aux:nn { a{b}~c } b
+    \test_aux:nn { \scan_stop:{b}~c } \scan_stop:
+  }
+
 \END

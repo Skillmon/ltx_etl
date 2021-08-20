@@ -124,8 +124,8 @@ and the derived files           etl.pdf
 % \begin{function}[EXP]{\etl_act:nnnnnnn, \etl_act:nnnnnn, \etl_act:nnnnn}
 %   \begin{syntax}
 %     \cs{etl_act:nnnnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{output} \Arg{token list}
-%     \cs{etl_act:nnnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{token list}
-%     \cs{etl_act:nnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{status} \Arg{token list}
+%     \cs{etl_act:nnnnnn}  \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{token list}
+%     \cs{etl_act:nnnnn}   \Arg{normal} \Arg{space} \Arg{group} \Arg{status} \Arg{token list}
 %   \end{syntax}
 %   This function will act on the \meta{token list} (somewhat a
 %   |map_tokens|-function).  Both \meta{normal} and \meta{group} should be code
@@ -276,6 +276,7 @@ and the derived files           etl.pdf
 %
 % \begin{function}[pTF]{\etl_if_eq:nn, \etl_if_eq:Vn}
 %   \begin{syntax}
+%     \cs{etl_if_eq_p:nn} \Arg{token list_1} \Arg{token list_2}
 %     \cs{etl_if_eq:nnTF} \Arg{token list_1} \Arg{token list_2} \Arg{true code} \Arg{false code}
 %   \end{syntax}
 %   Compares \meta{token list_1} and \meta{token list_2} with each other on a
@@ -285,8 +286,28 @@ and the derived files           etl.pdf
 %   input stream, else the \meta{false code}.
 % \end{function}
 %
+% \begin{function}[pTF]{\etl_token_if_in:nN, \etl_token_if_in:VN}
+%   \begin{syntax}
+%     \cs{etl_token_if_in_p:nN} \Arg{token list} \meta{token}
+%     \cs{etl_token_if_in:nNTF} \Arg{token list} \meta{token} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Searches for \meta{token} inside the \meta{token list}. If it is found
+%   returns true. Brace groups inside the \meta{token list} are ignored.
+% \end{function}
+%
+% \begin{function}[pTF]{\etl_token_if_in_deep:nN, \etl_token_if_in_deep:VN}
+%   \begin{syntax}
+%     \cs{etl_token_if_in_deep_p:nN} \Arg{token list} \meta{token}
+%     \cs{etl_token_if_in_deep:nNTF} \Arg{token list} \meta{token} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Searches for \meta{token} inside the \meta{token list}. If it is found
+%   returns true. Brace groups inside the \meta{token list} are recursively
+%   searched as well.
+% \end{function}
+%
 % \begin{function}[pTF]{\etl_if_in:nn, \etl_if_in:Vn}
 %   \begin{syntax}
+%     \cs{etl_if_in_p:nn} \Arg{token list} \Arg{search text}
 %     \cs{etl_if_in:nnTF} \Arg{token list} \Arg{search text} \Arg{true code} \Arg{false code}
 %   \end{syntax}
 %   Searches for \meta{search text} inside of \meta{token list}. If it is
@@ -305,6 +326,7 @@ and the derived files           etl.pdf
 %
 % \begin{function}[pTF]{\etl_if_in_deep:nn}
 %   \begin{syntax}
+%     \cs{etl_if_in_deep_p:nn} \Arg{token list} \Arg{search text}
 %     \cs{etl_if_in_deep:nnTF} \Arg{token list} \Arg{search text} \Arg{true code} \Arg{false code}
 %   \end{syntax}
 %   Does the same as \cs{etl_if_in:nnTF} but also recursively searches inside of
@@ -906,6 +928,59 @@ and the derived files           etl.pdf
     \fi:
   }
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[pTF]{\etl_token_if_in:nN}
+% \begin{macro}[EXP]{\@@_token_if_in:NnN}
+%   Searching for just a single token is rather easy, we just loop over the list
+%   and compare the |N|-type tokens to the one token provided. If we find a
+%   match we break and return |true|, else we'll return |false| eventually.
+%    \begin{macrocode}
+\exp_args:Nno
+\use:n { \prg_new_conditional:Npnn \etl_token_if_in:nN #1#2 { TF , T , F , p } }
+  {
+    \@@_act:nnnnnnn
+        \@@_token_if_in:NN \use_none:n \use_none:nn
+        \@@_act_just_result:nn
+        {#2}
+        \if_false:
+        {#1}
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_token_if_in:NN #1#2 }
+  {
+    \etl_token_if_eq:NNTF {#1} {#2} { \etl_act_break:n \if_true: } {}
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[pTF]{\etl_token_if_in_deep:nN}
+% \begin{macro}[EXP]{\@@_token_if_in_deep:Nn}
+%   The deep variant just has to recursively call itself on groups to also
+%   search those.
+%    \begin{macrocode}
+\exp_args:Nno \use:n
+  { \prg_new_conditional:Npnn \etl_token_if_in_deep:nN #1#2 { TF , T , F , p } }
+  {
+    \@@_act:nnnnnnn
+        \@@_token_if_in:NN \use_none:n \@@_token_if_in_deep:Nn
+        \@@_act_just_result:nn
+        {#2}
+        \if_false:
+        {#1}
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_token_if_in_deep:Nn #1#2 }
+  { \etl_token_if_in_deep:nNT {#2} {#1} { \etl_act_break:n \if_true: } }
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}[pTF]{\etl_if_eq:nn}
@@ -1530,16 +1605,24 @@ and the derived files           etl.pdf
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}[pTF]{\etl_token_if_in:VN}
+% \begin{macro}[pTF]{\etl_token_if_in_deep:VN}
 % \begin{macro}[pTF]{\etl_if_eq:Vn}
 % \begin{macro}[pTF]{\etl_if_in:Vn}
 % \begin{macro}[pTF]{\etl_if_in_deep:Vn}
 %   The variants are just using \cs{exp_args:NV} to expand a token list.
 %    \begin{macrocode}
+\prg_generate_conditional_variant:Nnn \etl_token_if_in:nN { V }
+  { TF , T , F , p }
+\prg_generate_conditional_variant:Nnn \etl_token_if_in_deep:nN { V }
+  { TF , T , F , p }
 \prg_generate_conditional_variant:Nnn \etl_if_eq:nn { V } { TF , T , F , p }
 \prg_generate_conditional_variant:Nnn \etl_if_in:nn { V } { TF , T , F , p }
 \prg_generate_conditional_variant:Nnn \etl_if_in_deep:nn { V }
   { TF , T , F , p }
 %    \end{macrocode}
+% \end{macro}
+% \end{macro}
 % \end{macro}
 % \end{macro}
 % \end{macro}
