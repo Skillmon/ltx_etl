@@ -29,3 +29,6 @@ unexpandably inside of `expl3`'s `l3tl` module. While being expandable these
 operations are typically slower than the unexpandable alternatives. Also there
 are tokens which are not expandably distinguishable in TeX (those are active
 characters which are let to the same character with a different category code).
+
+Additionally a general map to token lists is provided modelled after
+`\__tl_act:NNNn` with additional features.

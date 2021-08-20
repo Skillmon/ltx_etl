@@ -30,6 +30,9 @@ operations are typically slower than the unexpandable alternatives. Also there
 are tokens which are not expandably distinguishable in TeX (those are active
 characters which are let to the same character with a different category code).
 
+Additionally a general map to token lists is provided modelled after
+`\__tl_act:NNNn` with additional features.
+
 # Building etl
 
 The only place where version numbers and dates are guaranteed to be correct in
