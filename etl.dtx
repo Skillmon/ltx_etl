@@ -73,7 +73,8 @@ and the derived files           etl.pdf
     {^^A
       The \pkg{etl} package\\ expandable token list operations^^A
     }
-  \date{\filedate\space v\fileversion}
+  \GetFileInfo{etl.sty}
+  \date{\filedate\space\fileversion}
   \author{Jonathan P. Spratte\thanks{\protect\randomize{jspratte@yahoo.de}}}
   \DocInput{etl.dtx}
 \end{document}
@@ -93,12 +94,13 @@ and the derived files           etl.pdf
 % package, and usually shouldn't somehow end up inside the input stream by
 % accident).
 %
-% There is another limitation of this package: There are tokens which can not
-% expandably differentiated from each other, those are active characters let to
-% the same character with a different category code, something like the
+% There is another limitation of this package: There are tokens which cannot
+% expandably be differentiated from each other, those are active characters let
+% to the same character with a different category code, something like the
 % following:
 %
 % \begin{verbatim}
+% \char_set_catcode_letter:N a
 % \char_set_active_eq:NN a a
 % \char_set_catcode_active:N a
 % \end{verbatim}
@@ -463,7 +465,7 @@ and the derived files           etl.pdf
 % Tell who we are:
 %    \begin{macrocode}
 \ProvidesExplPackage{etl}
-  {2021-08-14} {0.1}
+  {2021-08-20} {0.1}
   {expandable token list manipulation}
 %    \end{macrocode}
 %
@@ -713,7 +715,7 @@ and the derived files           etl.pdf
 %   The check for spaces just gobbles everything up to the first
 %   \cs{s_@@_stop}\verb*| |. If we found a space at the head we remove that
 %   space and leave in the input the space function, the status, and
-%   \cs{@_act:w} for the next iteration.
+%   \cs{@@_act:w} for the next iteration.
 %    \begin{macrocode}
       \cs_new:Npn \@@_act_if_space:w ##1 \s_@@_stop #1 ##2 \s_@@_stop {}
       \cs_new:Npn \@@_act_space:w
@@ -1572,7 +1574,8 @@ and the derived files           etl.pdf
   }
 \cs_new_protected:Npn \@@_new_if_in:NNnn #1#2#3#4
   {
-    \group_align_safe_begin:
+    \scan_stop:
+    \if_false: { \fi:
     \cs_new:Npn #1 ##1 #3 {}
     \prg_new_conditional:Npnn #2 ##1 {#4}
       {
@@ -1588,7 +1591,7 @@ and the derived files           etl.pdf
           \prg_return_false:
         \fi:
       }
-    \group_align_safe_end:
+    \if_false: } \fi:
   }
 %    \end{macrocode}
 % \end{macro}
