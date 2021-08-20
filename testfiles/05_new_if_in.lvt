@@ -1,0 +1,32 @@
+\input regression-test
+
+\RequirePackage[enable-debug]{expl3}
+\ExplSyntaxOn
+\debug_on:n { check-declarations , deprecation , log-functions }
+\ExplSyntaxOff
+
+\RequirePackage{etl}
+
+\START
+\ExplSyntaxOn
+
+\TEST{define~ new~ test~ and~ use}
+  {
+    \etl_new_if_in:Nnn \test_if_a_in:n a { TF }
+    \test_if_a_in:nTF { This is some text } \TRUE \FALSE
+    \test_if_a_in:nTF { This is a text } \TRUE \FALSE
+    \test_if_a_in:nTF { This is {a} text } \TRUE \FALSE
+  }
+
+\OMIT
+\etl_new_if_in:Nnn \test_if_a_in:n a { TF }
+\TIMO
+
+\TESTEXP{expandable~ test}
+  {
+    \test_if_a_in:nTF { This is some text } \TRUE \FALSE \NEWLINE
+    \test_if_a_in:nTF { This is a text } \TRUE \FALSE \NEWLINE
+    \test_if_a_in:nTF { This is {a} text } \TRUE \FALSE \NEWLINE
+  }
+
+\END

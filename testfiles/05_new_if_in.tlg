@@ -1,0 +1,18 @@
+This is a generated file for the l3build validation system.
+Don't change this file in any respect.
+============================================================
+TEST 1: define new test and use
+============================================================
+Defining \__etl_user_function test_if_a_in:n a:w on line ...
+Defining \test_if_a_in:nTF on line ...
+FALSE
+TRUE
+FALSE
+============================================================
+============================================================
+TEST 2: expandable test
+============================================================
+FALSE
+TRUE
+FALSE
+============================================================
