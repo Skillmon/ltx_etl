@@ -53,5 +53,14 @@ uploadconfig  = {
   bugtracker  = "https://github.com/Skillmon/ltx_etl/issues",
   update      = true,
   description = [[
+`etl` provides expandable token list operations for which `expl3`'s `l3tl` only
+has unexpandable variants. These expandable versions are typically slower than
+the unexpandable code. Unlike the `l3tl` versions the functions in this module
+might contain braces and macro parameter tokens in their arguments, but as a
+drawback they can't distinguish some tokens and don't consider the character
+code of group-begin and group-end tokens.
+
+Additionally a general map to token lists is provided, modelled after the
+`expl3` internal `\__tl_act:NNNn` but with additional features.
   ]]
 }
