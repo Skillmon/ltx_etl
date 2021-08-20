@@ -1,0 +1,146 @@
+\input regression-test
+
+\RequirePackage[enable-debug]{expl3}
+\ExplSyntaxOn
+\debug_on:n { check-declarations , deprecation , log-functions }
+\ExplSyntaxOff
+
+\RequirePackage{etl}
+
+\START
+\ExplSyntaxOn
+
+\OMIT
+\scan_new:N \s_test_mark
+\scan_new:N \s_test_stop
+\cs_set_eq:NN \test_a: a
+\TIMO
+
+\TESTEXP{token}
+  {
+    \etl_token_if_eq:NNTF \s_test_mark \s_test_stop \TRUE \FALSE \NEWLINE
+    \etl_token_if_eq:NNTF a A \TRUE \FALSE \NEWLINE
+    \etl_token_if_eq:NNTF A A \TRUE \FALSE \NEWLINE
+    \etl_token_if_eq:NNTF \test_a: a \TRUE \FALSE \NEWLINE
+  }
+
+\TESTEXP{token~ variant}
+  {
+    \etl_token_if_eq:NNT a A \TRUE \NEWLINE
+    \etl_token_if_eq:NNF a A \FALSE \NEWLINE
+    \etl_token_if_eq:NNT A A \TRUE \NEWLINE
+    \etl_token_if_eq:NNF A A \FALSE \NEWLINE
+  }
+
+\OMIT
+\cs_set:Npn \test_aux:nn #1#2
+  { \etl_if_eq:nnTF {#1} {#2} \TRUE \FALSE \NEWLINE }
+\TIMO
+
+\TESTEXP{if~ eq~ true}
+  {
+    \test_aux:nn {} {}
+    \test_aux:nn { ~ } { ~ }
+    \test_aux:nn { a } { a }
+    \test_aux:nn { {} } { {} }
+    \test_aux:nn { ab{c}~ } { ab{c}~ }
+    \test_aux:nn { ab{c}~d } { ab{c}~d }
+    \test_aux:nn { a{bcd} } { a{bcd} }
+    \test_aux:nn { ~a{b{c{d}}}~ } { ~a{b{c{d}}}~ }
+    \test_aux:nn { ~#{#{#{#}}}~ } { ~#{#{#{#}}}~ }
+    \test_aux:nn { \empty } { \empty }
+    \test_aux:nn { ~\empty\scan_stop: } { ~\empty\scan_stop: }
+    \test_aux:nn { ~\empty{\scan_stop:}~ } { ~\empty {\scan_stop:}~ }
+  }
+
+\TESTEXP{if~ eq~ false}
+  {
+    \test_aux:nn {} { ~ }
+    \test_aux:nn {} { a }
+    \test_aux:nn {} { {} }
+    \test_aux:nn { ~ } { a }
+    \test_aux:nn { ~ } { {} }
+    \test_aux:nn { ~ } { { ~ } }
+    \test_aux:nn { a } { ~ }
+    \test_aux:nn { a } { {} }
+    \test_aux:nn { a } { { a } }
+    \test_aux:nn { {} } { {~} }
+    \test_aux:nn { {} } { {a} }
+    \test_aux:nn { {} } { ~ }
+    \test_aux:nn { {} } { a }
+    \test_aux:nn { ab{c}~ } { ab{c}~d }
+    \test_aux:nn { ab{c}~d } { ab{c}~ }
+    \test_aux:nn { ab{c}~ } { ab{c} }
+    \test_aux:nn { ab{c} } { ab{c}~ }
+    \test_aux:nn { \s_test_stop b{c}~ } { \s_test_mark b{c}~ }
+    \exp_args:Ne \test_aux:nn { \tl_to_str:n { abc } } { abc }
+    \test_aux:nn { ~\empty{\scan_stop:}~ } { \scan_stop: }
+    \test_aux:nn { ab{c} } { ab{C} }
+  }
+
+\OMIT
+\cs_set:Npn \test_aux:nn #1#2
+  { \etl_if_in:nnTF {#1} {#2} \TRUE \FALSE \NEWLINE }
+\TIMO
+
+\TESTEXP{if~ in~ true}
+  {
+    \test_aux:nn {} {}
+    \test_aux:nn { abcd } {}
+    \test_aux:nn { aaab } { aab }
+    \test_aux:nn { aa{ab}b } { a{ab}b }
+    \test_aux:nn { aa{ab}b } { a{ab}b }
+    \test_aux:nn { a~a{b} } { ~ }
+    \test_aux:nn { ~a~a~{b} } { ~a~ }
+    \test_aux:nn { a{b} } { {b} }
+    \test_aux:nn { a{#} } { {#} }
+    \test_aux:nn { a# } { # }
+    \test_aux:nn { a{~b}~ } { {~b}~ }
+    \test_aux:nn { a{~b}~ } { a{~b}~ }
+    \test_aux:nn { ~\empty\scan_stop: } { \empty }
+    \test_aux:nn { ~\empty\scan_stop: } { \empty \scan_stop: }
+    \test_aux:nn { ~\empty{\scan_stop:}~ } { \empty {\scan_stop:} }
+  }
+
+\TESTEXP{if~ in~ false}
+  {
+    \test_aux:nn { {abc} } { a }
+    \test_aux:nn { {abc} } { ab }
+    \test_aux:nn { {abc} } { abc }
+    \test_aux:nn { ab{abc}c } { abc }
+    \test_aux:nn { ab{abc}bc } { abc }
+    \test_aux:nn { ab{abc}b~c } { bc }
+    \test_aux:nn { a{}b } { ab }
+    \test_aux:nn { a~b } { ab }
+    \test_aux:nn { ~\empty{\scan_stop:}~ } { \scan_stop: }
+  }
+
+\OMIT
+\cs_set:Npn \test_aux:nn #1#2
+  { \etl_if_in_deep:nnTF {#1} {#2} \TRUE \FALSE \NEWLINE }
+\TIMO
+
+\TESTEXP{if~ in~ deep}
+  {
+    \test_aux:nn {} {}
+    \test_aux:nn { abcd } {}
+    \test_aux:nn { aaab } { aab }
+    \test_aux:nn { aa{ab}b } { a{ab}b }
+    \test_aux:nn { aa{ab}b } { a{ab}b }
+    \test_aux:nn { a~a{b} } { ~ }
+    \test_aux:nn { ~a~a~{b} } { ~a~ }
+    \test_aux:nn { a{b} } { {b} }
+    \test_aux:nn { a{#} } { {#} }
+    \test_aux:nn { a# } { # }
+    \test_aux:nn { a{~b}~ } { {~b}~ }
+    \test_aux:nn { a{~b}~ } { a{~b}~ }
+    \test_aux:nn { {abc} } { a }
+    \test_aux:nn { {abc} } { ab }
+    \test_aux:nn { {abc} } { abc }
+    \test_aux:nn { ab{abc}c } { abc }
+    \test_aux:nn { ab{abc}bc } { abc }
+    \test_aux:nn { ab{abc}b~c } { bc }
+    \test_aux:nn { ~\empty{\scan_stop:}~ } { \scan_stop: }
+  }
+
+\END

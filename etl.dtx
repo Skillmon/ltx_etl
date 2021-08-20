@@ -1,0 +1,1603 @@
+% \iffalse meta-comment
+%
+% File: etl.dtx Copyright (C) 2020-2021 Jonathan P. Spratte
+%
+% This work  may be  distributed and/or  modified under  the conditions  of the
+% LaTeX Project Public License (LPPL),  either version 1.3c  of this license or
+% (at your option) any later version.  The latest version of this license is in
+% the file:
+%
+%   http://www.latex-project.org/lppl.txt
+%
+% ------------------------------------------------------------------------------
+%
+%<*driver>^^A>>=
+\def\nameofplainTeX{plain}
+\ifx\fmtname\nameofplainTeX\else
+  \expandafter\begingroup
+\fi
+\input l3docstrip.tex
+\askforoverwritefalse
+\preamble
+
+--------------------------------------------------------------
+etl -- expandable token list operations
+E-mail: jspratte@yahoo.de
+Released under the LaTeX Project Public License v1.3c or later
+See http://www.latex-project.org/lppl.txt
+--------------------------------------------------------------
+
+Copyright (C) 2020-2021 Jonathan P. Spratte
+
+This  work may be  distributed and/or  modified under  the conditions  of the
+LaTeX Project Public License (LPPL),  either version 1.3c  of this license or
+(at your option) any later version.  The latest version of this license is in
+the file:
+
+  http://www.latex-project.org/lppl.txt
+
+This work is "maintained" (as per LPPL maintenance status) by
+  Jonathan P. Spratte.
+
+This work consists of the file  etl.dtx
+and the derived files           etl.pdf
+                                etl.sty
+
+\endpreamble
+% stop docstrip adding \endinput
+\postamble
+\endpostamble
+\generate{\file{etl.sty}{\from{etl.dtx}{pkg}}}
+\ifx\fmtname\nameofplainTeX
+  \expandafter\endbatchfile
+\else
+  \expandafter\endgroup
+\fi
+%
+\IfFileExists{etl.sty}{\RequirePackage{etl}}{}
+\PassOptionsToPackage{full}{textcomp}
+\documentclass{l3doc}
+\RequirePackage[oldstylenums,nott]{kpfonts}
+\RequirePackage{randtext,xcolor}
+\input{glyphtounicode}
+\pdfgentounicode=1
+\let\metaORIG\meta
+\protected\def\meta #1{\texttt{\metaORIG{#1}}}
+\renewcommand*\thefootnote{\fnsymbol{footnote}}
+\hypersetup{linkcolor=red!80!black,urlcolor=purple!80!black}
+\makeatletter
+\@ifdefinable\gobbledocstriptag{\def\gobbledocstriptag#1>{}}
+\makeatother
+\begin{document}
+  \title
+    {^^A
+      The \pkg{etl} package\\ expandable token list operations^^A
+    }
+  \date{\filedate\space v\fileversion}
+  \author{Jonathan P. Spratte\thanks{\protect\randomize{jspratte@yahoo.de}}}
+  \DocInput{etl.dtx}
+\end{document}
+%</driver>^^A=<<
+% \fi
+%
+% \maketitle
+%
+% \begin{documentation}^^A>>=
+%
+% \section{Documentation}
+%
+% The \pkg{etl} package provides a few \emph{slow but expandable} alternatives
+% to unexpandable functions found inside the \pkg{l3tl} module of \pkg{expl3}.
+% All user functions must not contain the token \cs{s__etl_stop} in any argument
+% (but there might be other forbidden tokens, all of which are internals to this
+% package, and usually shouldn't somehow end up inside the input stream by
+% accident).
+%
+% There is another limitation of this package: There are tokens which can not
+% expandably differentiated from each other, those are active characters let to
+% the same character with a different category code, something like the
+% following:
+%
+% \begin{verbatim}
+% \char_set_active_eq:NN a a
+% \char_set_catcode_active:N a
+% \end{verbatim}
+%
+% After this the active `|a|'s couldn't be told apart from non-active `|a|'s of
+% category letter by the parsers in this package. In general two tokens are
+% considered equal if \cs{etl_token_if_eq:NNTF} yields true (see there). Another
+% limitation is that the parser doesn't consider the character code of tokens
+% with category 1 or 2 (group begin and group end, typically |{}|), instead all
+% tokens found with these two category codes are normalised to
+% \texttt{\{\textsubscript{1}} and \texttt{\}\textsubscript{2}}.
+%
+% The core macro \cs{etl_act:nnnnnnn} is modelled after an internal of
+% \pkg{l3tl} called \cs{__tl_act:NNNn} but with some more possibilities added.
+%
+%
+% \subsection{A general loop}
+%
+% \begin{function}[EXP]{\etl_act:nnnnnnn, \etl_act:nnnnnn, \etl_act:nnnnn}
+%   \begin{syntax}
+%     \cs{etl_act:nnnnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{output} \Arg{token list}
+%     \cs{etl_act:nnnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{token list}
+%     \cs{etl_act:nnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{status} \Arg{token list}
+%   \end{syntax}
+%   This function will act on the \meta{token list} (somewhat a
+%   |map_tokens|-function).  Both \meta{normal} and \meta{group} should be code
+%   that expects two following arguments (the first being the \meta{status}, the
+%   second the next |N|-type token or the contents of the next group in the
+%   \meta{token list}), and \meta{space} should expect only the \meta{status} as
+%   a following argument.
+%
+%   You can also specify \meta{final} code which will receive the \meta{status}
+%   followed by the output (which you can assign with \cs{etl_act_output:n} and
+%   \cs{etl_act_output_pre:n}), and will be used inside an |e|-expansion context
+%   (so you'll want to protect anything you want to output from further
+%   expansion using \cs{exp_not:n}). Also you can specify some \meta{output}
+%   which should be there from the beginning.
+%
+%   Functions without the argument \meta{output} will start with an empty
+%   output, and those without \meta{final} will just output the results at the
+%   end.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion. If you don't need the \meta{final} argument processor and don't
+%     have to reorder some of the output you can also use \cs{exp_not:n} to
+%     directly output tokens where you currently are, this might be faster.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_output:n, \etl_act_output_pre:n}
+%   \begin{syntax}
+%     \cs{etl_act_output:n} \Arg{token list}
+%   \end{syntax}
+%   This will add \meta{token list} to the output of \cs{etl_act:nnnnnnn}. The
+%   normal version will add \meta{token list} after the current output, the
+%   |pre| variant will put it before the current output.
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_output_rest:, \etl_act_output_rest_pre:}
+%   \begin{syntax}
+%     \cs{etl_act_output_rest:}
+%   \end{syntax}
+%   After this macro was used all remaining things inside the \meta{token list}
+%   argument of \cs{etl_act:nnnnnnn} will be added to the output. The normal
+%   version will add it to the end of the output, the |pre| variant will put the
+%   remainder before the current output in reversed order.
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_status:n}
+%   \begin{syntax}
+%     \cs{etl_act_status:n} \Arg{status}
+%   \end{syntax}
+%   This will change the current status of \cs{etl_act:nnnnnnn} to
+%   \meta{status}.
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_put_back:n}
+%   \begin{syntax}
+%     \cs{etl_act_put_back:n} \Arg{token list}
+%   \end{syntax}
+%   You can put \meta{token list} back into the input stream to be reconsidered
+%   by the current \cs{etl_act:nnnnnnn} loop (of course this doesn't have to be
+%   literally put back, you might add completely new contents with this).
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]
+%   {
+%     \etl_act_switch:nnn,
+%     \etl_act_switch_normal:n, \etl_act_switch_space:n, \etl_act_switch_group:n
+%   }
+%   \begin{syntax}
+%     \cs{etl_act_switch:nnn} \Arg{normal} \Arg{space} \Arg{group}
+%     \cs{etl_act_switch_normal:n} \Arg{normal}
+%     \cs{etl_act_switch_space:n} \Arg{space}
+%     \cs{etl_act_switch_group:n} \Arg{group}
+%   \end{syntax}
+%   With these functions you can change the provided code to act on
+%   \meta{normal} (so |N|-type) tokens, \meta{space}s, and \meta{group}s.
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_do_final:}
+%   \begin{syntax}
+%     \cs{etl_act_do_final:}
+%   \end{syntax}
+%   This will immediately stop the current \cs{etl_act:nnnnnnn} invocation and
+%   execute the provided \meta{final} code (or if a variant without the
+%   \meta{final} code was used, the output). The \meta{final} code will receive
+%   the current status followed by the current output as two arguments (just
+%   like it would when the end of the \meta{token list} was reached).
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_break:, \etl_act_break_discard:}
+%   \begin{syntax}
+%     \cs{etl_act_break:}
+%   \end{syntax}
+%   This will immediately stop the current \cs{etl_act:nnnnnnn} invocation and
+%   leave the current output in the input stream. The |discard| variant will
+%   gobble the current output and leave nothing in the input stream.
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_break:n}
+%   \begin{syntax}
+%     \cs{etl_act_break:n} \Arg{token list}
+%   \end{syntax}
+%   This will immediately stop the current \cs{etl_act:nnnnnnn} invocation,
+%   gobble the current output and leave \meta{token list} in the input stream.
+%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
+%   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_break_pre:n, \etl_act_break_post:n}
+%   \begin{syntax}
+%     \cs{etl_act_break_pre:n} \Arg{token list}
+%   \end{syntax}
+%   This will immediately stop the current \cs{etl_act:nnnnnnn} invocation and
+%   leave the current output in the input stream, and in the case of the normal
+%   variant followed by \meta{token list}, in the |pre|-case preceded by
+%   \meta{token list}.
+% \end{function}
+%
+%
+% \subsection{Conditionals}\label{sec:conditionals}
+%
+% \begin{function}[pTF]{\etl_token_if_eq:NN}
+%   \begin{syntax}
+%     \cs{etl_token_if_eq_p:NN} \meta{token_1} \meta{token_2}
+%     \cs{etl_token_if_eq:NNTF} \meta{token_1} \meta{token_2} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Compares \meta{token_1} and \meta{token_2} and yields |true| if the two are
+%   equal. Two tokens are considered equal if they have the same meaning (so if
+%   \cs{if_meaning:w} is true) and the same string representation (so if
+%   \cs{str_if_eq:nnTF} is true).
+% \end{function}
+%
+% \begin{function}[pTF]{\etl_if_eq:nn, \etl_if_eq:Vn}
+%   \begin{syntax}
+%     \cs{etl_if_eq:nnTF} \Arg{token list_1} \Arg{token list_2} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Compares \meta{token list_1} and \meta{token list_2} with each other on a
+%   token-by-token basis. Keep in mind that there are tokens which can't be told
+%   apart from each other, and that groups are normalised. If both token lists
+%   match (modulo the mentioned limitations) the \meta{true code} is left in the
+%   input stream, else the \meta{false code}.
+% \end{function}
+%
+% \begin{function}[pTF]{\etl_if_in:nn, \etl_if_in:Vn}
+%   \begin{syntax}
+%     \cs{etl_if_in:nnTF} \Arg{token list} \Arg{search text} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Searches for \meta{search text} inside of \meta{token list}. If it is
+%   found the \meta{true code} is left in the input stream, else the \meta{false
+%   code}. Both macro parameter tokens as well as tokens with category code~1
+%   and 2 (normally |{}|) can be part of \meta{search text} (unlike for the
+%   similar function \cs{tl_if_in:nnTF}). Material inside of groups in
+%   \meta{token list} is ignored (except for the groups contained in
+%   \meta{search text}). So the following would first yield |true| and then
+%   |false|:
+% \end{function}
+% \begin{verbatim}
+% \etl_if_in:nnTF { a{b{c}} } { {b{c}} } { true } { false }
+% \etl_if_in:nnTF { a{b{c}} } {  b{c}  } { true } { false }
+% \end{verbatim}
+%
+% \begin{function}[pTF]{\etl_if_in_deep:nn}
+%   \begin{syntax}
+%     \cs{etl_if_in_deep:nnTF} \Arg{token list} \Arg{search text} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Does the same as \cs{etl_if_in:nnTF} but also recursively searches inside of
+%   groups in \meta{token list}. So this would yield |true| in both of the
+%   cases in above example.
+% \end{function}
+%
+%
+% \subsection{Modifying token lists}
+%
+% \begin{function}[EXP]
+%   {\etl_token_replace_once:nNn, \etl_token_replace_once:VNn}
+%   \begin{syntax}
+%     \cs{etl_token_replace_once:nNn} \Arg{token list} \meta{token} \Arg{replacement}
+%   \end{syntax}
+%   This function will replace the first occurrence of \meta{token} inside of
+%   \meta{token list} that is not hidden inside a group with \meta{replacement}.
+%   The \meta{token} has to be a valid |N|-type argument.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion for the |nNn|-variant.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_token_replace_all:nNn, \etl_token_replace_all:VNn}
+%   \begin{syntax}
+%     \cs{etl_token_replace_all:nNn} \Arg{token list} \meta{token} \Arg{replacement}
+%   \end{syntax}
+%   This function will replace each occurrence of \meta{token} inside of
+%   \meta{token list} that is not hidden inside a group with \meta{replacement}.
+%   The \meta{token} has to be a valid |N|-type argument.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion for the |nNn|-variant.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]
+%   {\etl_token_replace_all_deep:nNn, \etl_token_replace_all_deep:VNn}
+%   \begin{syntax}
+%     \cs{etl_token_replace_all_deep:nNn} \Arg{token list} \meta{token} \Arg{replacement}
+%   \end{syntax}
+%   This function will replace each occurrence of \meta{token} inside of
+%   \meta{token list} with \meta{replacement}.
+%   The \meta{token} has to be a valid |N|-type argument.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion for the |nNn|-variant.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_replace_once:nnn, \etl_replace_once:Vnn}
+%   \begin{syntax}
+%     \cs{etl_replace_once:nnn} \meta{token list} \meta{search text} \meta{replacement}
+%   \end{syntax}
+%   This function will replace the first occurrence of \meta{search text}
+%   inside of \meta{token list} that is not hidden inside a group with
+%   \meta{replacement}.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion for the |nnn|-variant.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_replace_all:nnn, \etl_replace_all:Vnn}
+%   \begin{syntax}
+%     \cs{etl_replace_all:nnn} \meta{token list} \meta{search text} \meta{replacement}
+%   \end{syntax}
+%   This function will replace all occurrences of \meta{search text}
+%   inside of \meta{token list} that are not hidden inside a group with
+%   \meta{replacement}.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion for the |nnn|-variant.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_replace_all_deep:nnn, \etl_replace_all_deep:Vnn}
+%   \begin{syntax}
+%     \cs{etl_replace_all_deep:nnn} \meta{token list} \meta{search text} \meta{replacement}
+%   \end{syntax}
+%   This function will replace all occurrences of \meta{search text}
+%   inside of \meta{token list} with \meta{replacement}.
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion for the |nnn|-variant.
+%   \end{texnote}
+% \end{function}
+%
+%
+% \subsection{New expandable fast tests}
+%
+% Functions generated with the means in this section are as fast as the
+% \pkg{l3tl} variants of them, but have at least one fixed argument.
+%
+% \begin{function}{\etl_new_if_in:Nnn}
+%   \begin{syntax}
+%     \cs{etl_new_if_in:Nnn} \meta{function} \meta{search text} \meta{conditions}
+%   \end{syntax}
+%   This will define a new \meta{function} which will act as a conditional and
+%   search for \meta{search text} inside of an |n|-type argument completely
+%   expandable. The \meta{conditions} should be a comma-separated list
+%   containing one or more of |p|, |T|, |F| and |TF| (just like for
+%   \cs{prg_new_conditional:Npnn}). The \meta{search text} must not contain
+%   tokens with category code~1 or 2 (normally |{}|) and can't contain macro
+%   parameter tokens (normally |#|). 
+%   Unlike for the conditionals in \autoref{sec:conditionals}, the \meta{search
+%   text} of functions created with \cs{etl_new_if_in:Nnn} might contain
+%   \cs{s__etl_stop} tokens.
+%
+%   So the following would yield |true| followed by |false|:
+% \end{function}
+% \begin{verbatim}
+% \etl_new_if_in:Nnn \my_if_a_in:n { a } { TF }
+% \my_if_a_in:nTF { a text } { true } { false }
+% \my_if_a_in:nTF {   text } { true } { false }
+% \end{verbatim}
+% 
+%
+% \end{documentation}^^A=<<
+%
+% \clearpage
+%
+% \begin{implementation}^^A>>=
+%
+% \section{Implementation}
+%
+%    \begin{macrocode}
+%<*pkg>
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+%<@@=etl>
+%    \end{macrocode}
+%
+% Tell who we are:
+%    \begin{macrocode}
+\ProvidesExplPackage{etl}
+  {2021-08-14} {0.1}
+  {expandable token list manipulation}
+%    \end{macrocode}
+%
+% Ensure dependencies are met:
+%    \begin{macrocode}
+\cs_if_exist:NF \tex_expanded:D
+  {
+    \msg_new:nnn { etl } { expanded-missing }
+      { The expanded primitive is required. }
+    \msg_fatal:nn { etl } { expanded-missing }
+  }
+%    \end{macrocode}
+%
+%
+% \subsection{Primitives}
+%
+% \begin{macro}[EXP]{\@@_expanded:w,\@@_unexpanded:w,\@@_detokenize:w}
+%   Private copies of a few primitives (evil code for \pkg{expl3}).
+%    \begin{macrocode}
+\cs_new_eq:NN \@@_expanded:w \tex_expanded:D
+\cs_new_eq:NN \@@_unexpanded:w \tex_unexpanded:D
+\cs_new_eq:NN \@@_detokenize:w \tex_detokenize:D
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{Variables}
+%
+% \begin{variable}{\s_@@_stop,\s_@@_mark}
+%   Scan marks.
+%    \begin{macrocode}
+\scan_new:N \s_@@_stop
+\scan_new:N \s_@@_mark
+%    \end{macrocode}
+% \end{variable}
+%
+% \subsection{Small auxiliaries}
+%
+% \begin{macro}[EXP]{\@@_if_mark:nTF,\@@_if_mark:w,\@@_if_mark_true:w}
+%   A small check whether some argument contains the scan mark \cs{s_@@_mark},
+%   the mark should always be the last token of the argument (and only a single
+%   such mark should be contained) to ensure correct behaviour.
+%    \begin{macrocode}
+\cs_new:Npn \@@_if_mark:nTF #1
+  { \@@_if_mark:w #1 \@@_if_mark_true:w \s_@@_mark \use_ii:nn }
+\cs_new:Npn \@@_if_mark:w #1 \s_@@_mark {}
+\cs_new:Npn \@@_if_mark_true:w \s_@@_mark \use_ii:nn #1#2 {#1}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\@@_split_first:w}
+%   Can be used to extract the first element from a token list, it should always
+%   be used like this:
+%   |\exp_after:wN|\hspace{0pt}\meta{function}\hspace{0pt}^^A
+%     |\@@_expanded:w|\hspace{0pt}|{\@@_split_first:w|\meta{arg}|}|
+%    \begin{macrocode}
+\cs_new:Npn \@@_split_first:w #1
+  {
+    { \@@_unexpanded:w {#1} }
+    \if_false: { \fi: \exp_after:wN } \exp_after:wN { \if_false: } \fi:
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\@@_turn_true:w,\@@_fi_turn_false:w}
+%   Fast ways to change the outcome of a test.
+%    \begin{macrocode}
+\cs_new:Npn \@@_turn_true:w \if_false: { \if_true: }
+\cs_new:Npn \@@_fi_turn_false:w \fi: \if_true: { \fi: \if_false: }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\@@_rm_space:w}
+%    \begin{macrocode}
+\exp_last_unbraced:NNo \cs_new:Npn \@@_rm_space:w \c_space_tl {}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]
+%   {
+%     \@@_if_empty:nTF, \@@_if_empty:nT, \@@_if_empty:w,
+%     \@@_if_empty_true:w, \@@_if_empty_true_TF:w
+%   }
+%   This is a fast test whether something is empty or not. The argument must not
+%   contain \cs{s_@@_stop} for this to work (but since that limitation is true
+%   for most if not all user facing functions of this module, this is fine to
+%   gain a bit of speed).
+%    \begin{macrocode}
+\cs_new:Npn \@@_if_empty:nT #1
+  {
+    \@@_if_empty:w
+      \s_@@_stop #1 \s_@@_stop \@@_if_empty_true:w
+      \s_@@_stop \s_@@_stop \use_none:n
+  }
+\cs_new:Npn \@@_if_empty:nTF #1
+  {
+    \@@_if_empty:w
+      \s_@@_stop #1 \s_@@_stop \@@_if_empty_true_TF:w
+      \s_@@_stop \s_@@_stop \use_ii:nn
+  }
+\cs_new:Npn \@@_if_empty:w #1 \s_@@_stop \s_@@_stop {}
+\cs_new:Npn \@@_if_empty_true:w \s_@@_stop \s_@@_stop \use_none:n #1
+  {#1}
+\cs_new:Npn \@@_if_empty_true_TF:w \s_@@_stop \s_@@_stop \use_ii:nn #1#2
+  {#1}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\@@_if_head_is_group:nTF,\@@_if_head_is_group:nT}
+%   This test works pretty much the same way \cs{tl_if_head_is_group:nTF} works,
+%   but it is faster because it gets rid of the unnecessary \cs{if:w} and
+%   instead only works by argument gobbling. Drawback is that if you only expand
+%   the macro twice you'll end up with unbalanced braces.
+%    \begin{macrocode}
+\cs_new:Npn \@@_if_head_is_group:nTF #1
+  {
+    \exp_after:wN \use_none:n \exp_after:wN
+      {
+        \exp_after:wN { \token_to_str:N #1 ? }
+        \exp_after:wN \use_iii:nnnn \token_to_str:N
+      }
+    \use_ii:nn
+  }
+\cs_new:Npn \@@_if_head_is_group:nT #1
+  {
+    \exp_after:wN \use_none:n \exp_after:wN
+      {
+        \exp_after:wN { \token_to_str:N #1 ? }
+        \exp_after:wN \use_iii:nnn \token_to_str:N
+      }
+    \use_none:n
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{The \texttt{act} loop} 
+%
+% \begin{macro}[EXP]{\etl_act:nnnnnnn,\etl_act:nnnnnn,\etl_act:nnnnn}
+% \begin{macro}[EXP]{\@@_act:nnnnnnn}
+% \begin{macro}[EXP]{\@@_act_just_result:nn}
+%   The act loop is modelled after the \pkg{expl3} internal \cs{__tl_act:NNNn}
+%   but with a few more features making it more general. Those are (argument
+%   to \cs{etl_act:nnnnnnn} in parentheses): a status (|#5|),
+%   |n|-type mapping instead of just |N|-type functions, a final result
+%   processing (|#4|), and the possibility to preset some output (|#6|). The
+%   other arguments are: |#7| the token list on which we should act, |#1|
+%   function to use for |N|-type elements in that list, |#2| function to use for
+%   spaces in that list, and |#3| function to use on groups in that list.
+%
+%   Just like the \cs{__tl_act:NNNn} function, this has a token which must not
+%   occur in the arguments, in this case that token is \cs{s_@@_stop}. The
+%   result is stored as an argument to the (undefined) function
+%   \cs{@@_act_result:n}.
+%    \begin{macrocode}
+\cs_new:Npn \etl_act:nnnnnnn #1#2#3#4#5#6#7
+  {
+    \@@_unexpanded:w \@@_expanded:w
+      {
+        {
+          \@@_act:w #7 {\s_@@_stop} . \s_@@_stop {#5} {#1} {#2} {#3}
+          \@@_act_result:n {#6} {#4}
+        }
+      }
+  }
+\cs_new:Npn \@@_act:nnnnnnn #1#2#3#4#5#6#7
+  {
+    \@@_expanded:w
+      {
+        \@@_act:w #7 {\s_@@_stop} . \s_@@_stop {#5} {#1} {#2} {#3}
+        \@@_act_result:n {#6} {#4}
+      }
+  }
+%    \end{macrocode}
+%   We also provide two reduced function variants, the first without presetting
+%   some output, the second also without the final processor.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_act:nnnnnn #1#2#3#4#5#6 }
+  { \etl_act:nnnnnnn {#1} {#2} {#3} {#4} {#5} {} {#6} }
+\exp_args:Nno \use:n { \cs_new:Npn \etl_act:nnnnn #1#2#3#4#5 }
+  { \etl_act:nnnnnnn {#1} {#2} {#3} \@@_act_just_result:nn {#4} {} {#5} }
+%    \end{macrocode}
+%   The final processor is provided with two |n|-type arguments (both in braces)
+%   the first being the status, the second the output. To just get the output we
+%   gobble the status and put \cs{@@_unexpanded:w} there to protect the final
+%   output from further expanding.
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_just_result:nn #1 { \@@_unexpanded:w }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\@@_if_head_is_space:nTF,\@@_if_head_is_space_true:w}
+% \begin{macro}[EXP]{\@@_if_head_is_N_type:nTF,\@@_if_head_is_N_type_false:w}
+% \begin{macro}[EXP]{\@@_act:w,\@@_act_if_space:w,\@@_act_space:w}
+%   We need a few macros with spaces at weird places so define them here. Since
+%   we got the limitation of not allowing \cs{s_@@_stop} we can use that token
+%   to get some fast tests. The first tests for a space at the front, and since
+%   that one is pretty fast we can use it to build a faster alternative to check
+%   for a starting |N|-type as well.
+%    \begin{macrocode}
+\group_begin:
+  \cs_set:Npn \@@_tmp:n #1
+    {
+      \cs_new:Npn \@@_if_head_is_space:nTF ##1
+        {
+          \@@_act_if_space:w
+            \s_@@_stop ##1 \s_@@_stop \@@_if_head_is_space_true:w
+            \s_@@_stop #1  \s_@@_stop \use_ii:nn
+        }
+      \cs_new:Npn \@@_if_head_is_space_true:w
+          \s_@@_stop #1 \s_@@_stop \use_ii:nn ##1##2
+        {##1}
+      \cs_new:Npn \@@_if_head_is_N_type:nTF ##1
+        {
+          \@@_act_if_space:w
+            \s_@@_stop ##1 \s_@@_stop \@@_if_head_is_N_type_false:w
+            \s_@@_stop #1  \s_@@_stop
+          \@@_if_head_is_group:nT {##1} \use_iii:nnn
+          \use_i:nn
+        }
+      \cs_new:Npn \@@_if_head_is_N_type_false:w
+          \s_@@_stop #1 \s_@@_stop
+          \@@_if_head_is_group:nT ##1 \use_iii:nnn
+          \use_i:nn
+          ##2##3
+        {##3}
+%    \end{macrocode}
+%   The act loop \cs{@@_act:w} grabs the remainder of the list, delimited by
+%   \cs{s_@@_stop}, picks up the status (|##2|), and the user provided functions
+%   for |N|-types (|##3|), spaces (|##4|), and groups (|##5|). We need to check
+%   which type is at the head of the token list (the space test is a bit
+%   stripped down, and very fast this way).
+%    \begin{macrocode}
+      \cs_new:Npn \@@_act:w ##1 \s_@@_stop ##2##3##4##5
+        {
+          \@@_act_if_space:w
+            \s_@@_stop ##1 \s_@@_stop \@@_act_space:w {##4}
+            \s_@@_stop #1  \s_@@_stop
+          \@@_if_head_is_group:nTF {##1}
+            { \@@_act_group:w {##5} }
+            \@@_act_normal:w {##3}
+          {##2} ##1 \s_@@_stop {##2} {##3} {##4} {##5}
+        }
+%    \end{macrocode}
+%   The check for spaces just gobbles everything up to the first
+%   \cs{s_@@_stop}\verb*| |. If we found a space at the head we remove that
+%   space and leave in the input the space function, the status, and
+%   \cs{@_act:w} for the next iteration.
+%    \begin{macrocode}
+      \cs_new:Npn \@@_act_if_space:w ##1 \s_@@_stop #1 ##2 \s_@@_stop {}
+      \cs_new:Npn \@@_act_space:w
+          ##1 \s_@@_stop #1 \s_@@_stop
+          \@@_if_head_is_group:nTF ##2 ##3 \@@_act_normal:w ##4
+          ##5 #1
+        { ##1 {##5} \@@_act:w }
+    }
+  \@@_tmp:n { ~ }
+\group_end:
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \begin{macro}[EXP]{\@@_act_normal:w}
+%   For a normal token we can act quite easy, just pick up that token and leave
+%   the next iteration in the input stream.
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_normal:w #1#2#3 { #1 {#2} #3 \@@_act:w }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[EXP]{\@@_act_group:w,\@@_act_if_end:w}
+%   Since the end marker is a single \cs{s_@@_stop} in a group, we have to test
+%   whether that end marker is found. The test here leads to undefined behaviour
+%   if the use supplied token list contains such a marker at an arbitrary point.
+%   If the end marker is found we call the final handler, else we provide the
+%   user supplied function the next group and input the next iteration.
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_group:w #1#2#3#4
+  {
+    \@@_act_if_end:w #4 \use_i:nn \etl_act_do_final: \s_@@_stop
+    #1 {#3} {#4} \@@_act:w
+  }
+\cs_new:Npn \@@_act_if_end:w #1 \s_@@_stop {}
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[EXP]
+%   {
+%     \etl_act_output:n, \etl_act_output_pre:n,
+%     \etl_act_output_rest:, \etl_act_output_rest_pre:
+%   }
+% \begin{macro}[EXP]
+%   {
+%     \@@_act_output_normal:nN, \@@_act_output_space:n, \@@_act_output_group:nn
+%     \@@_act_output_normal_pre:nN, \@@_act_output_space_pre:n,
+%     \@@_act_output_group_pre:nn
+%   }
+% \begin{macro}[EXP]
+%   {
+%     \@@_act_unexpanded_normal:nN, \@@_act_unexpanded_space:n,
+%     \@@_act_unexpanded_group:nn
+%   }
+%   To allow reordering the output we unfortunately can't just use
+%   \cs{@@_unexpanded:w} and be done, so we have to shift a few tokens around
+%   instead. All the output macros work by the same idea, except for
+%   \cs{etl_act_output_rest:} and \cs{etl_act_output_rest_pre:}, since it's a
+%   non-trivial task to get the remainder of the argument. Instead these two
+%   swap out the user provided functions for some that only pass through the
+%   input as output, for which we need six internal output macros.
+%
+%   In those cases in which we don't need reordering, we can internally shortcut
+%   using \cs{@@_unexpanded:w}.
+%    \begin{macrocode}
+\cs_new:Npn \etl_act_output:n #1 #2 \@@_act_result:n #3
+  { #2 \@@_act_result:n { #3 #1 } }
+\cs_new:Npn \etl_act_output_pre:n #1 #2 \@@_act_result:n #3
+  { #2 \@@_act_result:n { #1 #3 } }
+\cs_new:Npn \etl_act_output_rest: #1 \s_@@_stop #2#3#4#5
+  {
+    #1 \s_@@_stop {#2}
+    \@@_act_output_normal:nN \@@_act_output_space:n \@@_act_output_group:nn
+  }
+\cs_new:Npn \etl_act_output_rest_pre: #1 \s_@@_stop #2#3#4#5
+  {
+    #1 \s_@@_stop {#2}
+    \@@_act_output_normal_pre:nN
+    \@@_act_output_space_pre:n
+    \@@_act_output_group_pre:nn
+  }
+\cs_new:Npn \@@_act_output_normal:nN #1#2 #3 \@@_act_result:n #4
+  { #3 \@@_act_result:n { #4 #2 } }
+\cs_new:Npn \@@_act_output_space:n #1 #2 \@@_act_result:n #3
+  { #2 \@@_act_result:n { #3 ~ } }
+\cs_new:Npn \@@_act_output_group:nn #1#2 #3 \@@_act_result:n #4
+  { #3 \@@_act_result:n { #4 {#2} } }
+\cs_new:Npn \@@_act_output_normal_pre:nN #1#2 #3 \@@_act_result:n #4
+  { #3 \@@_act_result:n { #2 #4 } }
+\cs_new:Npn \@@_act_output_space_pre:n #1 #2 \@@_act_result:n #3
+  { #2 \@@_act_result:n { ~ #3 } }
+\cs_new:Npn \@@_act_output_group_pre:nn #1#2 #3 \@@_act_result:n #4
+  { #3 \@@_act_result:n { {#2} #4 } }
+\cs_new:Npn \@@_act_unexpanded_normal:nN #1 { \exp_not:N }
+\cs_new:Npn \@@_act_unexpanded_space:n #1 { ~ }
+\cs_new:Npn \@@_act_unexpanded_group:nn #1#2 { { \@@_unexpanded:w {#2} } }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_act_status:n}
+%   Just switch out the status which is stored immediately after \cs{s_@@_stop}.
+%    \begin{macrocode}
+\cs_new:Npn \etl_act_status:n #1 #2 \s_@@_stop #3
+  { #2 \s_@@_stop {#1} }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[EXP]{\etl_act_put_back:n}
+%   Place the first argument after the next iteration of the loop.
+%    \begin{macrocode}
+\cs_new:Npn \etl_act_put_back:n #1 #2 \@@_act:w { #2 \@@_act:w #1 }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[EXP]
+%   {
+%     \etl_act_switch:nnn, \etl_act_switch_normal:n,
+%     \etl_act_switch_space:n, \etl_act_switch_group:n
+%   }
+%   Pretty straight forward, just switch out the user provided functions for the
+%   new argument.
+%    \begin{macrocode}
+\cs_new:Npn \etl_act_switch:nnn #1#2#3 #4 \s_@@_stop #5#6#7#8
+  { #4 \s_@@_stop {#5} {#1} {#2} {#3} }
+\cs_new:Npn \etl_act_switch_normal:n #1 #2 \s_@@_stop #3#4
+  { #2 \s_@@_stop {#3} {#1} }
+\cs_new:Npn \etl_act_switch_space:n #1 #2 \s_@@_stop #3#4#5
+  { #2 \s_@@_stop {#3} {#4} {#1} }
+\cs_new:Npn \etl_act_switch_group:n #1 #2 \s_@@_stop #3#4#5#6
+  { #2 \s_@@_stop {#3} {#4} {#5} {#1} }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[EXP]
+%   {
+%     \etl_act_do_final:,
+%     \etl_act_break:,\etl_act_break_discard:,
+%     \etl_act_break:n, \etl_act_break_pre:n, \etl_act_break_post:n
+%   }
+%   These are different forms to end the loop. The first will gobble the
+%   remainder and apply the final action on the token list currently stored for
+%   output.
+%
+%   The |break| variants will gobble the final action and output what's
+%   currently there (except for the |discard| variant).
+%    \begin{macrocode}
+\cs_new:Npn \etl_act_do_final: #1 \s_@@_stop #2#3 \@@_act_result:n #4#5
+  { #5 {#2} {#4} }
+\cs_new:Npn \etl_act_break: #1 \@@_act_result:n #2#3 { \@@_unexpanded:w {#2} }
+\cs_new:Npn \etl_act_break_discard: #1 \@@_act_result:n #2#3 {}
+\cs_new:Npn \etl_act_break:n #1 #2 \@@_act_result:n #3#4
+  { \@@_unexpanded:w {#1} }
+\cs_new:Npn \etl_act_break_pre:n #1 #2 \@@_act_result:n #3#4
+  { \@@_unexpanded:w { #1 #3 } }
+\cs_new:Npn \etl_act_break_post:n #1 #2 \@@_act_result:n #3#4
+  { \@@_unexpanded:w { #3 #1 } }
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{Expandable tests}
+%
+% \begin{macro}[pTF]{\etl_token_if_eq:NN}
+%   We consider two tokens equal when they have the same meaning and the same
+%   string representation. This isn't always correct. If an active character is
+%   let to the same character with a different category code those two tokens
+%   aren't distinguishable by expansion, \emph{afaik}. To get the optimisation
+%   of \cs{prg_new_conditional:Npnn} we use \cs{if_false:} and turn it true if
+%   both tests are true (this is easier than coding all four variants by hand,
+%   even though that could give slightly better performance). The exception
+%   being the |TF| variant, since that is used in the inner loop of many
+%   functions. The braces around the arguments of \cs{token_if_eq_meaning:NNT}
+%   are necessary because of the first step of expansion applied to that
+%   function.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_token_if_eq:NNTF #1#2 }
+  {
+    \token_if_eq_meaning:NNT {#1} {#2} { \str_if_eq:nnT #1#2 \use_ii:nnn }
+    \use_ii:nn
+  }
+\exp_args:Nno
+\use:n { \prg_new_conditional:Npnn \etl_token_if_eq:NN #1#2 { T , F , p } }
+  {
+    \token_if_eq_meaning:NNT {#1} {#2} { \str_if_eq:nnT #1#2 \@@_turn_true:w }
+    \if_false:
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[pTF]{\etl_if_eq:nn}
+% \begin{macro}[EXP]{\@@_if_eq_normal:nN,\@@_if_eq_normal:NnN}
+% \begin{macro}[EXP]{\@@_if_eq_space:n}
+% \begin{macro}[EXP]{\@@_if_eq_group:nn,\@@_if_eq_group:nnn}
+% \begin{macro}[EXP]{\@@_if_eq_final:nn}
+%   The test needs to compare the full lists on a token-by-token basis. One of
+%   the two lists is stored inside the status the other is processed. The |act|
+%   code will then leave either \cs{if_false:} or \cs{if_true:} in the input
+%   stream.
+%    \begin{macrocode}
+\exp_args:Nno
+\use:n { \prg_new_conditional:Npnn \etl_if_eq:nn #1#2 { TF , T , F , p } }
+  {
+    \@@_act:nnnnnnn
+        \@@_if_eq_normal:nN
+        \@@_if_eq_space:n
+        \@@_if_eq_group:nn
+        \@@_if_eq_final:nn
+        {#2}
+        {}
+        {#1}
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+  }
+%    \end{macrocode}
+%   To compare the next token we need to check whether the status is already
+%   empty (which would mean that token list is longer, hence not equal), if it's
+%   not empty and the head is |N|-type we compare these two (the test here for
+%   |N|-type fails for empty arguments, hence we have to test this separately).
+%   If they are equal we store the rest of the second token list in the status
+%   and go on with the loop, else we break out and return false.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_normal:nN #1#2 }
+  {
+    \@@_if_empty:nT {#1} { \etl_act_break:n \if_false: }
+    \@@_if_head_is_N_type:nTF {#1}
+      {
+        \exp_after:wN \@@_if_eq_normal:NnN
+          \@@_expanded:w { \@@_split_first:w #1 }
+          #2
+      }
+      { \etl_act_break:n \if_false: }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_normal:NnN #1#2#3 }
+  {
+    \etl_token_if_eq:NNTF {#1} {#3}
+      { \etl_act_status:n {#2} }
+      { \etl_act_break:n \if_false: }
+  }
+%    \end{macrocode}
+%   Spaces are pretty similar, but easier, we don't need to split of the first
+%   token in a complicated manner, instead we just gobble a leading space.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_space:n #1 }
+  {
+    \@@_if_head_is_space:nTF {#1}
+      { \exp_after:wN \etl_act_status:n \exp_after:wN { \@@_rm_space:w #1 } }
+      { \etl_act_break:n \if_false: }
+  }
+%    \end{macrocode}
+%   Groups are similarly handled to normal arguments, but instead of comparing
+%   only two tokens we have to compare by recursion.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_group:nn #1 }
+  {
+    \@@_if_head_is_group:nTF {#1}
+      {
+        \exp_after:wN \@@_if_eq_group:nnn
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+      { \etl_act_break:n \if_false: }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_group:nnn #1#2#3 }
+  {
+    \etl_if_eq:nnTF {#1} {#3}
+      { \etl_act_status:n {#2} }
+      { \etl_act_break:n \if_false: }
+  }
+%    \end{macrocode}
+%   Finally, if the loop didn't break until the first token list is empty we
+%   just have to make sure that the second list is also empty by now. If that's
+%   the case the two are equal, else not. We need to leave either true or false
+%   (protected against the \cs{@@_expanded:w} expansion) in the input.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_final:nn #1#2 }
+  {
+    \exp_after:wN
+    \@@_unexpanded:w
+    \@@_if_empty:nT {#1} { { \if_true: } \use_none:n } { \if_false: }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[pTF]{\etl_if_in:nn}
+% \begin{macro}[EXP]
+%   {\@@_if_in_normal:nN,\@@_if_in_normal:nnnN,\@@_if_in_normal:NnnnN}
+% \begin{macro}[EXP]{\@@_if_in_space:n,\@@_if_in_space:nnn}
+% \begin{macro}[EXP]
+%   {\@@_if_in_group:nn,\@@_if_in_group:nnnn,\@@_if_in_group:nnnnn}
+% \begin{macro}[EXP]{\@@_if_in_put_back:n}
+%   \cs{etl_if_in:nn} has to reevaluate every token but the very first in order
+%   to compare them, else something like |aab| wouldn't contain |ab| according
+%   to the test, because the second |a| would've been gobbled. For this we need
+%   \cs{@@_if_in_put_back:n} which will remove the first token (we need to
+%   watch out for spaces) and puts the rest back using \cs{etl_act_put_back:n}.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_put_back:n #1 }
+  {
+    \@@_if_head_is_space:nTF {#1}
+      { \exp_after:wN \etl_act_put_back:n \exp_after:wN { \@@_rm_space:w #1 } }
+      { \exp_after:wN \etl_act_put_back:n \exp_after:wN { \use_none:n #1 } }
+  }
+%    \end{macrocode}
+%   As already said, we'll need to reinsert some tokens, and we'll might have to
+%   revert what was already matched, so inside of the status we store the
+%   remainder of the pattern which needs to be matched, followed by the entire
+%   pattern, followed by the tokens which were already matched (and might need
+%   to be put back). As soon as the pattern is matched the remainder will be
+%   empty and we'll leave \cs{if_true:} in the input, at the end of the entire
+%   list we'll leave \cs{if_false:}, which we store in the prefilled output. The
+%   emptiness of the pattern will be checked before the next token is evaluated,
+%   so the trailing space after |#1| does no harm but allows the token list to
+%   end in the pattern.
+%
+%   All of the macros used as arguments to \cs{@@_act:nnnnnnn} will need to
+%   unbrace the status which will then lead to three arguments. Else this is
+%   pretty much the same idea as \cs{etl_if_eq:nnTF}.
+%    \begin{macrocode}
+\exp_args:Nno
+\use:n { \prg_new_conditional:Npnn \etl_if_in:nn #1#2 { TF , T , F , p } }
+  {
+    \@@_act:nnnnnnn
+        \@@_if_in_normal:nN \@@_if_in_space:n \@@_if_in_group:nn
+        \@@_act_just_result:nn
+        { { #2 } { #2 } {} }
+        \if_false:
+        { #1 ~ }
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+  }
+%    \end{macrocode}
+%   Just like \cs{@@_if_in_group:nn}, \cs{@@_if_in_normal:nN} need to split off
+%   the first token of the pattern, for which \cs{@@_split_first:w} is used,
+%   and \cs{@@_if_in_space:n} needs to trim off a leading space.
+%    \begin{macrocode}
+\cs_new:Npn \@@_if_in_normal:nN #1 { \@@_if_in_normal:nnnN #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_normal:nnnN #1#2#3#4 }
+  {
+    \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
+    \@@_if_head_is_N_type:nTF {#1}
+      {
+        \exp_after:wN \@@_if_in_normal:NnnnN
+          \@@_expanded:w { \@@_split_first:w #1 } {#2} {#3} #4
+      }
+      {
+        \etl_act_status:n { {#2} {#2} {} }
+        \@@_if_in_put_back:n { #3 #4 }
+      }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_normal:NnnnN #1#2#3#4#5 }
+  {
+    \etl_token_if_eq:NNTF {#1} {#5}
+      { \etl_act_status:n { {#2} {#3} {#4#5} } }
+      {
+        \@@_if_in_put_back:n { #4 #5 }
+        \etl_act_status:n { {#3} {#3} {} }
+      }
+  }
+\cs_new:Npn \@@_if_in_space:n #1 { \@@_if_in_space:nnn #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_space:nnn #1#2#3 }
+  {
+    \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
+    \@@_if_head_is_space:nTF {#1}
+      {
+        \exp_after:wN \etl_act_status:n \exp_after:wN
+          { \exp_after:wN { \@@_rm_space:w #1 } {#2} { #3 ~ } }
+      }
+      {
+        \@@_if_in_put_back:n { #3 ~ }
+        \etl_act_status:n { {#2} {#2} {} }
+      }
+  }
+\cs_new:Npn \@@_if_in_group:nn #1 { \@@_if_in_group:nnnn #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group:nnnn #1 }
+  {
+    \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
+    \@@_if_head_is_group:nTF {#1}
+      {
+        \exp_after:wN \@@_if_in_group:nnnnn
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+      { \@@_if_in_group_false:nnn }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group:nnnnn #1#2#3#4#5 }
+  {
+    \etl_if_eq:nnTF {#1} {#5}
+      { \etl_act_status:n { {#2} {#3} { #4 {#5} } } }
+      {
+        \@@_if_in_put_back:n { #4 {#5} }
+        \etl_act_status:n { {#3} {#3} {} }
+      }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_false:nnn #1#2#3 }
+  {
+    \@@_if_in_put_back:n { #2 {#3} }
+    \etl_act_status:n { {#1} {#1} {} }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[pTF]{\etl_if_in_deep:nn}
+% \begin{macro}[EXP]
+%   {
+%     \@@_if_in_group_deep:nn, \@@_if_in_group_deep:nnnn,
+%     \@@_if_in_group_deep:nnnnn, \@@_if_in_group_deep_false:nnn
+%   }
+%   In essence this is the same as \cs{etl_if_in:nnTF}, but additionally
+%   every time a group is encountered we need search that group by recursion as
+%   well after directly comparing it to the pattern.
+%    \begin{macrocode}
+\exp_args:Nno
+\use:n { \prg_new_conditional:Npnn \etl_if_in_deep:nn #1#2 { TF , T , F , p } }
+  {
+    \@@_act:nnnnnnn
+        \@@_if_in_normal:nN \@@_if_in_space:n \@@_if_in_group_deep:nn
+        \@@_act_just_result:nn
+        { { #2 } { #2 } {} }
+        \if_false:
+        { #1 ~ }
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+  }
+\cs_new:Npn \@@_if_in_group_deep:nn #1 { \@@_if_in_group_deep:nnnn #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_deep:nnnn #1 }
+  {
+    \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
+    \@@_if_head_is_group:nTF {#1}
+      {
+        \exp_after:wN \@@_if_in_group_deep:nnnnn
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+      { \@@_if_in_group_deep_false:nnn }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_deep:nnnnn #1#2#3#4#5 }
+  {
+    \etl_if_eq:nnTF {#1} {#5}
+      { \etl_act_status:n { {#2} {#3} { #4 {#5} } } }
+      {
+        \etl_if_in_deep:nnT {#5} {#3} { \etl_act_break:n \if_true: }
+        \@@_if_in_put_back:n { #4 {#5} }
+        \etl_act_status:n { {#3} {#3} {} }
+      }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_deep_false:nnn #1#2#3 }
+  {
+    \etl_if_in_deep:nnT {#3} {#1} { \etl_act_break:n \if_true: }
+    \@@_if_in_put_back:n { #2 {#3} }
+    \etl_act_status:n { {#1} {#1} {} }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_token_replace_all:nNn}
+% \begin{macro}[EXP]{\@@_token_replace:NnnN}
+%   Replaceing a single token (and in fact the same is true for all the
+%   replacement actions in this package) doesn't need reordering and no post
+%   processing, so we can use in place output using \cs{@@_unexpanded:w}. We
+%   store the token we want to replace inside the act function, as well as an
+%   additional argument which will be executed once a replacement was done
+%   (this is used for the \cs{etl_token_replace_once:nNn} function).
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_all:nNn #1#2#3 }
+  {
+    \etl_act:nnnnnn
+      { \@@_token_replace:NnnN #2 {} }
+      \@@_act_unexpanded_space:n
+      \@@_act_unexpanded_group:nn
+      \use_none:nn
+      {#3}
+      {#1}
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_token_replace:NnnN #1#2#3#4 }
+  {
+    \etl_token_if_eq:NNTF {#1} {#4}
+      { \@@_unexpanded:w {#3} #2 }
+      { \@@_unexpanded:w {#4} }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_token_replace_all_deep:nNn}
+% \begin{macro}[EXP]{\@@_token_replace_deep:Nnn}
+%   Deep replacement is done by recursion. Since the deep variant will not
+%   execute any additional code we omit such an additional argument for it.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_all_deep:nNn #1#2#3 }
+  {
+    \etl_act:nnnnnn
+      { \@@_token_replace:NnnN #2 {} }
+      \@@_act_unexpanded_space:n
+      { \@@_token_replace_deep:Nnn #2 }
+      \use_none:nn
+      {#3}
+      {#1}
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_token_replace_deep:Nnn #1#2#3 }
+  { { \etl_token_replace_all_deep:nNn {#3} #1 {#2} } }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_token_replace_once:nNn}
+%   To only handle the first matching token we just let the replacement internal
+%   exchange the function to directly output any token.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_once:nNn #1#2#3 }
+  {
+    \etl_act:nnnnnn
+      {
+        \@@_token_replace:NnnN #2
+          { \etl_act_switch_normal:n \@@_act_unexpanded_normal:nN }
+      }
+      \@@_act_unexpanded_space:n
+      \@@_act_unexpanded_group:nn
+      \use_none:nn
+      {#3}
+      {#1}
+  }
+%    \end{macrocode}
+% \end{macro}
+
+% \begin{macro}[EXP]{\etl_replace_all:nnn}
+% \begin{macro}[EXP]
+%   {
+%     \@@_replace_put_back:nnnN,
+%     \@@_replace_put_back_normal:Nn, \@@_replace_put_back_group:nn
+%   }
+% \begin{macro}[EXP]
+%   {
+%     \@@_replace_normal:nN, \@@_replace_normal:nnnnNN,
+%     \@@_replace_normal:NnnnnNN, \@@_replace_normal_false:nnnNN
+%   }
+% \begin{macro}[EXP]
+%   {
+%     \@@_replace_space:n, \@@_replace_space:nnnnN, \@@_replace_space_aux:nnnnN,
+%     \@@_replace_space_false:nnnN
+%   }
+% \begin{macro}[EXP]
+%   {
+%     \@@_replace_group:nn, \@@_replace_group:nnnnNn, \@@_replace_group:nnnnnNn,
+%     \@@_replace_group_false:nnnNn
+%   }
+% \begin{macro}[EXP]{\@@_replace_final:nn, \@@_replace_final:nnnnNn}
+%   Replacing an arbitrary number of tokens (which might include braces and
+%   spaces) is quite a bit harder than a single |N|-type. We place in the status
+%   the remainder of the pattern, the full pattern, delayed tokens (those
+%   which matched the pattern), the replacement, and a marker which should tell
+%   us whether we want to only replace the first match (if so use
+%   \cs{s_@@_mark}, else any other single token).
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_replace_all:nnn #1#2#3 }
+  {
+    \etl_act:nnnnnn
+      \@@_replace_normal:nN
+      \@@_replace_space:n
+      \@@_replace_group:nn
+      \@@_replace_final:nn
+      { {#2} {#2} {} {#3} \scan_stop: }
+      {#1}
+  }
+%    \end{macrocode}
+%   We again need to be able to put back a few tokens, but this time we also
+%   need to know whether the first token is an |N|-type or group, because we
+%   can't just gobble the first element but need to output it unchanged.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_put_back:nnnN #1#2#3#4 }
+  {
+    \@@_if_head_is_space:nTF {#1}
+      {
+        \exp_after:wN \etl_act_put_back:n \exp_after:wN { \@@_rm_space:w #1 } ~
+      }
+      {
+        \@@_if_head_is_group:nTF {#1}
+          { \exp_after:wN \@@_replace_put_back_group:nn }
+          { \exp_after:wN \@@_replace_put_back_normal:Nn }
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+    \etl_act_status:n { {#2} {#2} {} {#3} #4 }
+  }
+\cs_new:Npn \@@_replace_put_back_group:nn #1
+  {
+    \@@_unexpanded:w { {#1} }
+    \etl_act_put_back:n
+  }
+\cs_new:Npn \@@_replace_put_back_normal:Nn #1
+  {
+    \@@_unexpanded:w {#1}
+    \etl_act_put_back:n
+  }
+\cs_new:Npn \@@_replace_normal:nN #1 { \@@_replace_normal:nnnnNN #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_normal:nnnnNN #1 }
+  {
+    \@@_if_head_is_N_type:nTF {#1}
+      {
+        \exp_after:wN \@@_replace_normal:NnnnnNN
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+      { \@@_replace_normal_false:nnnNN }
+  }
+%    \end{macrocode}
+%   Just to keep track of the different arguments here: |#1| is the next token
+%   in the pattern, |#2| is the remainder of the pattern, |#3| is the full
+%   pattern stored for reuse, |#4| are the delayed tokens, which might need to
+%   be put back, |#5| is the replacement text, |#6| is the marker which might
+%   indicate the |once| function, and |#7| is the next token of the input.
+%    \begin{macrocode}
+\exp_args:Nno
+\use:n { \cs_new:Npn \@@_replace_normal:NnnnnNN #1#2#3#4#5#6#7 }
+  {
+    \etl_token_if_eq:NNTF {#1} {#7}
+      {
+        \@@_if_empty:nTF {#2}
+          {
+            \@@_unexpanded:w {#5}
+            \@@_if_mark:nTF {#6}
+              {
+                \etl_act_switch:nnn
+                  \@@_act_unexpanded_normal:nN
+                  \@@_act_unexpanded_space:n
+                  \@@_act_unexpanded_group:nn
+                \etl_act_status:n { {} {} {} {} #6 }
+              }
+              { \etl_act_status:n { {#3} {#3} {} {#5} #6 } }
+          }
+          { \etl_act_status:n { {#2} {#3} { #4 #7 } {#5} #6 } }
+      }
+      { \@@_replace_put_back:nnnN { #4 #7 } {#3} {#5} #6 }
+  }
+\exp_args:Nno
+\use:n { \cs_new:Npn \@@_replace_normal_false:nnnNN #1#2#3#4#5 }
+  { \@@_replace_put_back:nnnN { #2 #5 } {#1} {#3} {#4} }
+\cs_new:Npn \@@_replace_space:n #1 { \@@_replace_space:nnnnN #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_space:nnnnN #1 }
+  {
+    \@@_if_head_is_space:nTF {#1}
+      {
+        \exp_after:wN \@@_replace_space_aux:nnnnN \exp_after:wN
+          { \@@_rm_space:w #1 }
+      }
+      { \@@_replace_space_false:nnnN }
+  }
+%    \end{macrocode}
+%   Again, to keep track, |#1| is the remainder of the pattern, |#2| is the full
+%   pattern, |#3| the delayed tokens, |#4| the replacement text, |#5| the marker
+%   for the |once| function.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_space_aux:nnnnN #1#2#3#4#5 }
+  {
+    \@@_if_empty:nTF {#1}
+      {
+        \@@_unexpanded:w {#4}
+        \@@_if_mark:nTF {#5}
+          {
+            \etl_act_switch:nnn
+              \@@_act_unexpanded_normal:nN
+              \@@_act_unexpanded_space:n
+              \@@_act_unexpanded_group:nn
+            \etl_act_status:n { {} {} {} {} #5 }
+          }
+          { \etl_act_status:n { {#2} {#2} {} {#4} #5 } }
+      }
+      { \etl_act_status:n { {#1} {#2} { #3 ~ } {#4} #5 } }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_space_false:nnnN #1#2#3#4 }
+  { \@@_replace_put_back:nnnN { #2 ~ } {#1} {#3} {#4} }
+\cs_new:Npn \@@_replace_group:nn #1 { \@@_replace_group:nnnnNn #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group:nnnnNn #1 }
+  {
+    \@@_if_head_is_group:nTF {#1}
+      {
+        \exp_after:wN \@@_replace_group:nnnnnNn
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+      { \@@_replace_group_false:nnnNn }
+  }
+%    \end{macrocode}
+%   And again, |#1| the next group of the pattern, |#2| the remainder of the
+%   pattern, |#3| the full pattern, |#4| the delayed stuff, |#5| the replacement
+%   text, |#6| the marker for the |once| function, |#7| the next group in the
+%   input.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group:nnnnnNn #1#2#3#4#5#6#7 }
+  {
+    \etl_if_eq:nnTF {#1} {#7}
+      {
+        \@@_if_empty:nTF {#2}
+          {
+            \@@_unexpanded:w {#5}
+            \@@_if_mark:nTF {#6}
+              {
+                \etl_act_switch:nnn
+                  \@@_act_unexpanded_normal:nN
+                  \@@_act_unexpanded_space:n
+                  \@@_act_unexpanded_group:nn
+                \etl_act_status:n { {} {} {} {} #6 }
+              }
+              { \etl_act_status:n { {#3} {#3} {} {#5} #6 } }
+          }
+          { \etl_act_status:n { {#2} {#3} { #4 {#7} } {#5} #6 } }
+      }
+      { \@@_replace_put_back:nnnN { #4 {#7} } {#3} {#5} #6 }
+  }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group_false:nnnNn #1#2#3#4#5 }
+  { \@@_replace_put_back:nnnN { #2 {#5} } {#1} {#3} {#4} }
+\cs_new:Npn \@@_replace_final:nn #1 { \@@_replace_final:nnnnNn #1 }
+\cs_new:Npn \@@_replace_final:nnnnNn #1#2#3#4#5#6 { \@@_unexpanded:w { #6#3 } }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_replace_all_deep:nnn}
+% \begin{macro}[EXP]
+%   {
+%     \@@_replace_group_deep:nn, \@@_replace_group_deep:nnnnNn,
+%     \@@_replace_group_deep:nnnnnNn, \@@_replace_group_deep_false:nnnNn
+%   }
+%   The |deep| variant works again pretty much the same as the |all| variant,
+%   except that it searches groups recursively.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_replace_all_deep:nnn #1#2#3 }
+  {
+    \etl_act:nnnnnn
+      \@@_replace_normal:nN
+      \@@_replace_space:n
+      \@@_replace_group_deep:nn
+      \@@_replace_final:nn
+      { {#2} {#2} {} {#3} \scan_stop: }
+      {#1}
+  }
+\cs_new:Npn \@@_replace_group_deep:nn #1
+  { \@@_replace_group_deep:nnnnNn #1 }
+\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group_deep:nnnnNn #1 }
+  {
+    \@@_if_head_is_group:nTF {#1}
+      {
+        \exp_after:wN \@@_replace_group_deep:nnnnnNn
+          \@@_expanded:w { \@@_split_first:w #1 }
+      }
+      { \@@_replace_group_deep_false:nnnNn }
+  }
+\exp_args:Nno
+\use:n { \cs_new:Npn \@@_replace_group_deep:nnnnnNn #1#2#3#4#5#6#7 }
+  {
+    \etl_if_eq:nnTF {#1} {#7}
+      {
+        \@@_if_empty:nTF {#2}
+          {
+            \@@_unexpanded:w {#5}
+            \etl_act_status:n { {#3} {#3} {} {#5} #6 }
+          }
+          { \etl_act_status:n { {#2} {#3} { #4 {#7} } {#5} #6 } }
+      }
+      {
+        \@@_if_empty:nTF {#4}
+          {
+            { \etl_replace_all_deep:nnn {#7} {#3} {#5} }
+            \etl_act_status:n { {#3} {#3} {} {#5} #6 }
+          }
+          { \@@_replace_put_back:nnnN { #4 {#7} } {#3} {#5} #6 }
+      }
+  }
+\exp_args:Nno
+\use:n { \cs_new:Npn \@@_replace_group_deep_false:nnnNn #1#2#3#4#5 }
+  {
+    \@@_if_empty:nTF {#2}
+      {
+        { \etl_replace_all_deep:nnn {#5} {#1} {#3} }
+        \etl_act_status:n { {#1} {#1} {} {#3} #4 }
+      }
+      { \@@_replace_put_back:nnnN { #2 {#5} } {#1} {#3} #4 }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_replace_once:nnn}
+%   And this is the same as the |all| variant except that we now use the
+%   \cs{s_@@_mark} marker inside the status.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new:Npn \etl_replace_once:nnn #1#2#3 }
+  {
+    \etl_act:nnnnnn
+      \@@_replace_normal:nN
+      \@@_replace_space:n
+      \@@_replace_group:nn
+      \@@_replace_final:nn
+      { {#2} {#2} {} {#3} \s_@@_mark }
+      {#1}
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[pTF]{\etl_if_eq:Vn}
+% \begin{macro}[pTF]{\etl_if_in:Vn}
+% \begin{macro}[pTF]{\etl_if_in_deep:Vn}
+%   The variants are just using \cs{exp_args:NV} to expand a token list.
+%    \begin{macrocode}
+\prg_generate_conditional_variant:Nnn \etl_if_eq:nn { V } { TF , T , F , p }
+\prg_generate_conditional_variant:Nnn \etl_if_in:nn { V } { TF , T , F , p }
+\prg_generate_conditional_variant:Nnn \etl_if_in_deep:nn { V }
+  { TF , T , F , p }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]
+%   {
+%     \etl_token_replace_all:VNn, \etl_token_replace_all_deep:VNn,
+%     \etl_token_replace_once:VNn
+%   }
+% \begin{macro}[EXP]
+%   {\etl_replace_all:Vnn, \etl_replace_all_deep:Vnn, \etl_replace_once:Vnn}
+%    \begin{macrocode}
+\cs_generate_variant:Nn \etl_token_replace_all:nNn { V }
+\cs_generate_variant:Nn \etl_token_replace_all_deep:nNn { V }
+\cs_generate_variant:Nn \etl_token_replace_once:nNn { V }
+\cs_generate_variant:Nn \etl_replace_all:nnn { V }
+\cs_generate_variant:Nn \etl_replace_all_deep:nnn { V }
+\cs_generate_variant:Nn \etl_replace_once:nnn { V }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\etl_new_if_in:Nnn}
+% \begin{macro}{\@@_new_if_in:NNnn}
+%   These tests work essentially in the same way as \cs{tl_if_in:nnTF}, but
+%   instead they use a predefined internal macro so that no definition at use
+%   time is necessary.
+%    \begin{macrocode}
+\exp_args:Nno \use:n { \cs_new_protected:Npn \etl_new_if_in:Nnn #1#2 }
+  {
+    \exp_args:Nc \@@_new_if_in:NNnn
+      { @@_user_function ~ \cs_to_str:N #1 ~ \tl_to_str:n {#2} :w }
+      #1 {#2}
+  }
+\cs_new_protected:Npn \@@_new_if_in:NNnn #1#2#3#4
+  {
+    \group_align_safe_begin:
+    \cs_new:Npn #1 ##1 #3 {}
+    \prg_new_conditional:Npnn #2 ##1 {#4}
+      {
+        \if:w
+            \scan_stop:
+            \@@_detokenize:w \exp_after:wN { #1 ##1 {}{} #3 }
+            \scan_stop:
+          \@@_fi_turn_false:w
+        \fi:
+        \if_true:
+          \prg_return_true:
+        \else:
+          \prg_return_false:
+        \fi:
+      }
+    \group_align_safe_end:
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+%    \begin{macrocode}
+%</pkg>
+%    \end{macrocode}
+%
+% \end{implementation}^^A=<<
+%
+% \clearpage
+% \PrintIndex
+%
+% \Finale
+\endinput
+%
+^^A vim: ft=tex fdm=marker fmr=>>=,=<<

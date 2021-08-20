@@ -1,0 +1,25 @@
+\input regression-test
+
+\RequirePackage[enable-debug]{expl3}
+\ExplSyntaxOn
+\debug_on:n { check-declarations , deprecation , log-functions }
+\ExplSyntaxOff
+
+\RequirePackage{etl}
+
+\START
+\ExplSyntaxOn
+
+\OMIT
+\cs_set:Npn \test_normal:nN #1 { \etl_act_output_pre:n }
+\cs_set:Npn \test_space:n #1 {}
+\cs_set:Npn \test_group:nn #1#2 { \etl_act_output:n { {#2} } }
+\TIMO
+
+\TESTEXP{act}
+  {
+    \etl_act:nnnnn \use_none:nn \use_none:n \use_none:nn {} { a~{b}~c~d }
+    \etl_act:nnnnn \test_normal:nN \test_space:n \test_group:nn {} { a~{bb}~c~d }
+  }
+
+\END

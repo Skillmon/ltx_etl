@@ -1,0 +1,44 @@
+\documentclass{minimal}
+\input regression-test
+
+\RequirePackage[enable-debug]{expl3}
+\ExplSyntaxOn
+\debug_on:n { check-declarations , deprecation , log-functions }
+\ExplSyntaxOff
+
+\RequirePackage{etl}
+
+\begin{document}
+\START
+\ExplSyntaxOn
+
+\TEST{conditionals}
+  {
+    \vbox_set:Nn \l_tmpa_box
+      {
+        \halign{#&\ERROR#\cr
+          \etl_if_eq:nnTF { a&b } { a&b } \TRUE \FALSE \cr
+          \etl_if_eq:nnTF { a{&}b } { a{&}b } \TRUE \FALSE \cr
+          \etl_if_eq:nnTF { #{&}# } { #{&}# } \TRUE \FALSE \cr
+          \etl_if_in:nnTF { a&b } { & } \TRUE \FALSE \cr
+          \etl_if_in_deep:nnTF { a{&}b } { & } \TRUE \FALSE \cr
+        }
+      }
+  }
+
+\TEST{modifying}
+  {
+    \vbox_set:Nn \l_tmpa_box
+      {
+        \halign{\TYPE{1}#&\TYPE{2}#&\TYPE{3}#\cr
+          \etl_token_replace_once:nNn { a|b|c } | { & } \cr
+          \etl_token_replace_all:nNn { a|b|c } | { & } \cr
+          \etl_token_replace_all_deep:nNn { a{&}&b&c } {&} { hihi } \cr
+          \etl_replace_once:nnn { a COL b COL c } { COL } { & } \cr
+          \etl_replace_all:nnn { a COL b COL c } { COL } { & } \cr
+          \etl_replace_all_deep:nnn { a{&}&b&c } { & } { hihi } \cr
+        }
+      }
+  }
+
+\END

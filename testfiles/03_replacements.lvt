@@ -1,0 +1,86 @@
+\input regression-test
+
+\RequirePackage[enable-debug]{expl3}
+\ExplSyntaxOn
+\debug_on:n { check-declarations , deprecation , log-functions }
+\ExplSyntaxOff
+
+\RequirePackage{etl}
+
+\START
+\ExplSyntaxOn
+
+\TESTEXP{token~replace~once}
+  {
+    \etl_token_replace_once:nNn { abc\empty{~}abc } a { A } \NEWLINE
+    \etl_token_replace_once:nNn { abc\empty{~}abc } \empty { A } \NEWLINE
+    \etl_token_replace_once:nNn { abc\empty{~}abc } \empty { EMPTY~ } \NEWLINE
+    \etl_token_replace_once:nNn { {a}abc\empty{~}abc } a { A } \NEWLINE
+  }
+
+\TESTEXP{token~replace~all}
+  {
+    \etl_token_replace_all:nNn { abc\empty{~}abc } a { A } \NEWLINE
+    \etl_token_replace_all:nNn { abc\empty{~}abc } \empty { A } \NEWLINE
+    \etl_token_replace_all:nNn { abc\empty{~}abc } \empty { EMPTY~ } \NEWLINE
+    \etl_token_replace_all:nNn { {a}abc\empty{~}abc } a { A } \NEWLINE
+  }
+
+\TESTEXP{token~replace~all~deep}
+  {
+    \etl_token_replace_all_deep:nNn { abc\empty{~}abc } a { A } \NEWLINE
+    \etl_token_replace_all_deep:nNn { abc\empty{~}abc } \empty { A } \NEWLINE
+    \etl_token_replace_all_deep:nNn { abc\empty{~}abc } \empty { EMPTY~ } \NEWLINE
+    \etl_token_replace_all_deep:nNn { {a}abc\empty{~}abc } a { A } \NEWLINE
+  }
+
+\TESTEXP{replace~once}
+  {
+    \etl_replace_once:nnn { {abc}abc\empty{~}abc~{a} } { a } { A } \NEWLINE
+    \etl_replace_once:nnn { {abc}abc\empty{~}abc~{a} } { abc } { A } \NEWLINE
+    \etl_replace_once:nnn { {abc}abc\empty{~}abc~{a} } { abc~ } { A } \NEWLINE
+    \etl_replace_once:nnn { {abc}abc\empty{~}abc~{a} } { {abc} } { A } \NEWLINE
+    \etl_replace_once:nnn { {abc}abc\empty{~}abc~{a} } { {abc}a } { A } \NEWLINE
+    \etl_replace_once:nnn { {abc}abc\empty{~}abc~{a} } { \empty{~} } { A } \NEWLINE
+    \etl_replace_once:nnn { aaab } { aab } { AAB } \NEWLINE
+  }
+
+\TESTEXP{replace~all}
+  {
+    \etl_replace_all:nnn { {abc}abc\empty{~}abc~{a} } { a } { A } \NEWLINE
+    \etl_replace_all:nnn { {abc}abc\empty{~}abc~{a} } { abc } { A } \NEWLINE
+    \etl_replace_all:nnn { {abc}abc\empty{~}abc~{a} } { abc~ } { A } \NEWLINE
+    \etl_replace_all:nnn { {abc}abc\empty{~}abc~{a} } { {abc} } { A } \NEWLINE
+    \etl_replace_all:nnn { {abc}abc\empty{~}abc~{a} } { {abc}a } { A } \NEWLINE
+    \etl_replace_all:nnn { {abc}abc\empty{~}abc~{a} } { \empty{~} } { A } \NEWLINE
+    \etl_replace_all:nnn { aaab } { aab } { AAB } \NEWLINE
+    \etl_replace_all:nnn { aaa } { aa } { AAB } \NEWLINE
+    \etl_replace_all:nnn { aaaa } { aa } { AAB } \NEWLINE
+  }
+
+\TESTEXP{replace~all~deep}
+  {
+    \etl_replace_all_deep:nnn { {abc}abc\empty{~}abc~{a} } { a } { A } \NEWLINE
+    \etl_replace_all_deep:nnn { {abc}abc\empty{~}abc~{a} } { abc } { A } \NEWLINE
+    \etl_replace_all_deep:nnn { {abc}abc\empty{~}abc~{a} } { abc~ } { A } \NEWLINE
+    \etl_replace_all_deep:nnn { {abc}abc\empty{~}abc~{a} } { {abc} } { A } \NEWLINE
+    \etl_replace_all_deep:nnn { {abc}abc\empty{~}abc~{a} } { {abc}a } { A } \NEWLINE
+    \etl_replace_all_deep:nnn { {abc}abc\empty{~}abc~{a} } { \empty{~} } { A } \NEWLINE
+    \etl_replace_all_deep:nnn { aaab } { aab } { AAB } \NEWLINE
+  }
+
+\OMIT
+\cs_set:Npn \test_tmp:n #1 { \exp_args:No \exp_not:o {#1} \NEWLINE }
+\TIMO
+
+\TESTEXP{two~ steps}
+  {
+    \test_tmp:n { \etl_token_replace_once:nNn { abcb{b} } b { B } }
+    \test_tmp:n { \etl_token_replace_all:nNn { abcb{b} } b { B } }
+    \test_tmp:n { \etl_token_replace_all_deep:nNn { abcb{b} } b { B } }
+    \test_tmp:n { \etl_replace_once:nnn { abcb{ab}ab } { ab } { B } }
+    \test_tmp:n { \etl_replace_all:nnn { abcb{ab}ab } { ab } { B } }
+    \test_tmp:n { \etl_replace_all_deep:nnn { abcb{ab}ab } { ab } { B } }
+  }
+
+\END
