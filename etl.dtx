@@ -60,17 +60,33 @@ and the derived files           etl.pdf
 \RequirePackage[oldstylenums,nott]{kpfonts}
 \RequirePackage{randtext,xcolor}
 \input{glyphtounicode}
+\usepackage{xistercian}
 \pdfgentounicode=1
 \let\metaORIG\meta
 \protected\def\meta #1{\texttt{\metaORIG{#1}}}
-\renewcommand*\thefootnote{\fnsymbol{footnote}}
+\renewcommand*\thefootnote{\cistercian{footnote}}
 \hypersetup{linkcolor=red!80!black,urlcolor=purple!80!black}
 \makeatletter
 \@ifdefinable\gobbledocstriptag{\def\gobbledocstriptag#1>{}}
+\protected\def\savefootnotestuff
+  {%
+    \let\mysavethefootnote\thefootnote
+    \let\mysave@makefnmark\@makefnmark
+    \let\mysave@makefntext\@makefntext
+  }
+\def\restorefootnotestuff{\texorpdfstring\restorefootnotestuff@{}}
+\def\restorefootnotestuff@
+  {%
+    \global\let\thefootnote\mysavethefootnote
+    \global\let\@makefnmark\mysave@makefnmark
+    \global\let\@makefntext\mysave@makefntext
+  }
 \makeatother
 \begin{document}
+  \savefootnotestuff
   \title
     {^^A
+      \restorefootnotestuff
       The \pkg{etl} package\\ expandable token list operations^^A
     }
   \GetFileInfo{etl.sty}
@@ -82,6 +98,7 @@ and the derived files           etl.pdf
 % \fi
 %
 % \maketitle
+% \setcounter{footnote}{1}
 %
 % \tableofcontents
 %
@@ -91,10 +108,11 @@ and the derived files           etl.pdf
 %
 % The \pkg{etl} package provides a few \emph{slow but expandable} alternatives
 % to unexpandable functions found inside the \pkg{l3tl} module of \pkg{expl3}.
-% All user functions must not contain the token \cs{s__etl_stop} in any argument
-% (but there might be other forbidden tokens, all of which are internals to this
-% package, and usually shouldn't somehow end up inside the input stream by
-% accident).
+% All user functions must not contain the tokens \cs{s__etl_stop}\footnote{At
+% any nesting level of groups} or \cs{__etl_act_result:n}\footnote{Outside of
+% some local brace groups} in any argument (but there might be other forbidden
+% tokens, all of which are internals to this package, and usually shouldn't
+% somehow end up inside the input stream by accident).
 %
 % There is another limitation of this package: There are tokens which cannot
 % expandably be differentiated from each other, those are active characters let
@@ -108,12 +126,13 @@ and the derived files           etl.pdf
 % \end{verbatim}
 %
 % After this the active `|a|'s couldn't be told apart from non-active `|a|'s of
-% category letter by the parsers in this package. In general two tokens are
-% considered equal if \cs{etl_token_if_eq:NNTF} yields true (see there). Another
-% limitation is that the parser doesn't consider the character code of tokens
-% with category 1 or 2 (group begin and group end, typically |{}|), instead all
-% tokens found with these two category codes are normalised to
-% \texttt{\{\textsubscript{1}} and \texttt{\}\textsubscript{2}}.
+% category letter by the parsers in this package.\footnote{Thanks to Bruno Le
+% Floch for pointing that out.} In general two tokens are considered equal if
+% \cs{etl_token_if_eq:NNTF} yields true (see there). Another limitation is that
+% the parser doesn't consider the character code of tokens with category 1 or 2
+% (group begin and group end, typically |{}|), instead all tokens found with
+% these two category codes are normalised to \texttt{\{\textsubscript{1}} and
+% \texttt{\}\textsubscript{2}}.
 %
 % The core macro \cs{etl_act:nnnnnnn} is modelled after an internal of
 % \pkg{l3tl} called \cs{__tl_act:NNNn} but with some more possibilities added.
@@ -1329,7 +1348,7 @@ and the derived files           etl.pdf
   }
 %    \end{macrocode}
 % \end{macro}
-
+%
 % \begin{macro}[EXP]{\etl_replace_all:nnn}
 % \begin{macro}[EXP]
 %   {
