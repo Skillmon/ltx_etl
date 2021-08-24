@@ -293,7 +293,7 @@ and the derived files           etl.pdf
 %   \cs{str_if_eq:nnTF} is true).
 % \end{function}
 %
-% \begin{function}[pTF]{\etl_if_eq:nn, \etl_if_eq:Vn}
+% \begin{function}[pTF]{\etl_if_eq:nn}
 %   \begin{syntax}
 %     \cs{etl_if_eq_p:nn} \Arg{token list_1} \Arg{token list_2}
 %     \cs{etl_if_eq:nnTF} \Arg{token list_1} \Arg{token list_2} \Arg{true code} \Arg{false code}
@@ -305,7 +305,7 @@ and the derived files           etl.pdf
 %   input stream, else the \meta{false code}.
 % \end{function}
 %
-% \begin{function}[pTF]{\etl_token_if_in:nN, \etl_token_if_in:VN}
+% \begin{function}[pTF]{\etl_token_if_in:nN}
 %   \begin{syntax}
 %     \cs{etl_token_if_in_p:nN} \Arg{token list} \meta{token}
 %     \cs{etl_token_if_in:nNTF} \Arg{token list} \meta{token} \Arg{true code} \Arg{false code}
@@ -314,7 +314,7 @@ and the derived files           etl.pdf
 %   returns true. Brace groups inside the \meta{token list} are ignored.
 % \end{function}
 %
-% \begin{function}[pTF]{\etl_token_if_in_deep:nN, \etl_token_if_in_deep:VN}
+% \begin{function}[pTF]{\etl_token_if_in_deep:nN}
 %   \begin{syntax}
 %     \cs{etl_token_if_in_deep_p:nN} \Arg{token list} \meta{token}
 %     \cs{etl_token_if_in_deep:nNTF} \Arg{token list} \meta{token} \Arg{true code} \Arg{false code}
@@ -324,7 +324,7 @@ and the derived files           etl.pdf
 %   searched as well.
 % \end{function}
 %
-% \begin{function}[pTF]{\etl_if_in:nn, \etl_if_in:Vn}
+% \begin{function}[pTF]{\etl_if_in:nn}
 %   \begin{syntax}
 %     \cs{etl_if_in_p:nn} \Arg{token list} \Arg{search text}
 %     \cs{etl_if_in:nnTF} \Arg{token list} \Arg{search text} \Arg{true code} \Arg{false code}
@@ -356,8 +356,7 @@ and the derived files           etl.pdf
 %
 % \subsection{Modifying token lists}
 %
-% \begin{function}[EXP]
-%   {\etl_token_replace_once:nNn, \etl_token_replace_once:VNn}
+% \begin{function}[EXP]{\etl_token_replace_once:nNn}
 %   \begin{syntax}
 %     \cs{etl_token_replace_once:nNn} \Arg{token list} \meta{token} \Arg{replacement}
 %   \end{syntax}
@@ -369,11 +368,11 @@ and the derived files           etl.pdf
 %     The result is returned within \cs{exp_not:n}, which means that the token
 %     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
 %     argument expansion. The result will be returned after exactly two steps of
-%     expansion for the |nNn|-variant.
+%     expansion.
 %   \end{texnote}
 % \end{function}
 %
-% \begin{function}[EXP]{\etl_token_replace_all:nNn, \etl_token_replace_all:VNn}
+% \begin{function}[EXP]{\etl_token_replace_all:nNn}
 %   \begin{syntax}
 %     \cs{etl_token_replace_all:nNn} \Arg{token list} \meta{token} \Arg{replacement}
 %   \end{syntax}
@@ -385,12 +384,11 @@ and the derived files           etl.pdf
 %     The result is returned within \cs{exp_not:n}, which means that the token
 %     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
 %     argument expansion. The result will be returned after exactly two steps of
-%     expansion for the |nNn|-variant.
+%     expansion.
 %   \end{texnote}
 % \end{function}
 %
-% \begin{function}[EXP]
-%   {\etl_token_replace_all_deep:nNn, \etl_token_replace_all_deep:VNn}
+% \begin{function}[EXP]{\etl_token_replace_all_deep:nNn}
 %   \begin{syntax}
 %     \cs{etl_token_replace_all_deep:nNn} \Arg{token list} \meta{token} \Arg{replacement}
 %   \end{syntax}
@@ -402,11 +400,11 @@ and the derived files           etl.pdf
 %     The result is returned within \cs{exp_not:n}, which means that the token
 %     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
 %     argument expansion. The result will be returned after exactly two steps of
-%     expansion for the |nNn|-variant.
+%     expansion.
 %   \end{texnote}
 % \end{function}
 %
-% \begin{function}[EXP]{\etl_replace_once:nnn, \etl_replace_once:Vnn}
+% \begin{function}[EXP]{\etl_replace_once:nnn}
 %   \begin{syntax}
 %     \cs{etl_replace_once:nnn} \meta{token list} \meta{search text} \meta{replacement}
 %   \end{syntax}
@@ -418,11 +416,11 @@ and the derived files           etl.pdf
 %     The result is returned within \cs{exp_not:n}, which means that the token
 %     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
 %     argument expansion. The result will be returned after exactly two steps of
-%     expansion for the |nnn|-variant.
+%     expansion.
 %   \end{texnote}
 % \end{function}
 %
-% \begin{function}[EXP]{\etl_replace_all:nnn, \etl_replace_all:Vnn}
+% \begin{function}[EXP]{\etl_replace_all:nnn}
 %   \begin{syntax}
 %     \cs{etl_replace_all:nnn} \meta{token list} \meta{search text} \meta{replacement}
 %   \end{syntax}
@@ -434,11 +432,11 @@ and the derived files           etl.pdf
 %     The result is returned within \cs{exp_not:n}, which means that the token
 %     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
 %     argument expansion. The result will be returned after exactly two steps of
-%     expansion for the |nnn|-variant.
+%     expansion.
 %   \end{texnote}
 % \end{function}
 %
-% \begin{function}[EXP]{\etl_replace_all_deep:nnn, \etl_replace_all_deep:Vnn}
+% \begin{function}[EXP]{\etl_replace_all_deep:nnn}
 %   \begin{syntax}
 %     \cs{etl_replace_all_deep:nnn} \meta{token list} \meta{search text} \meta{replacement}
 %   \end{syntax}
@@ -449,7 +447,7 @@ and the derived files           etl.pdf
 %     The result is returned within \cs{exp_not:n}, which means that the token
 %     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
 %     argument expansion. The result will be returned after exactly two steps of
-%     expansion for the |nnn|-variant.
+%     expansion.
 %   \end{texnote}
 % \end{function}
 %
@@ -1622,46 +1620,6 @@ and the derived files           etl.pdf
       {#1}
   }
 %    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}[pTF]{\etl_token_if_in:VN}
-% \begin{macro}[pTF]{\etl_token_if_in_deep:VN}
-% \begin{macro}[pTF]{\etl_if_eq:Vn}
-% \begin{macro}[pTF]{\etl_if_in:Vn}
-% \begin{macro}[pTF]{\etl_if_in_deep:Vn}
-%   The variants are just using \cs{exp_args:NV} to expand a token list.
-%    \begin{macrocode}
-\prg_generate_conditional_variant:Nnn \etl_token_if_in:nN { V }
-  { TF , T , F , p }
-\prg_generate_conditional_variant:Nnn \etl_token_if_in_deep:nN { V }
-  { TF , T , F , p }
-\prg_generate_conditional_variant:Nnn \etl_if_eq:nn { V } { TF , T , F , p }
-\prg_generate_conditional_variant:Nnn \etl_if_in:nn { V } { TF , T , F , p }
-\prg_generate_conditional_variant:Nnn \etl_if_in_deep:nn { V }
-  { TF , T , F , p }
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-% \end{macro}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}[EXP]
-%   {
-%     \etl_token_replace_all:VNn, \etl_token_replace_all_deep:VNn,
-%     \etl_token_replace_once:VNn
-%   }
-% \begin{macro}[EXP]
-%   {\etl_replace_all:Vnn, \etl_replace_all_deep:Vnn, \etl_replace_once:Vnn}
-%    \begin{macrocode}
-\cs_generate_variant:Nn \etl_token_replace_all:nNn { V }
-\cs_generate_variant:Nn \etl_token_replace_all_deep:nNn { V }
-\cs_generate_variant:Nn \etl_token_replace_once:nNn { V }
-\cs_generate_variant:Nn \etl_replace_all:nnn { V }
-\cs_generate_variant:Nn \etl_replace_all_deep:nnn { V }
-\cs_generate_variant:Nn \etl_replace_once:nnn { V }
-%    \end{macrocode}
-% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\etl_new_if_in:Nnn}
