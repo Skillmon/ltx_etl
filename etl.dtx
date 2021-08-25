@@ -560,8 +560,8 @@ and the derived files           etl.pdf
 % \begin{macro}[EXP]{\@@_split_first:w}
 %   Can be used to extract the first element from a token list, it should always
 %   be used like this:
-%   |\exp_after:wN|\hspace{0pt}\meta{function}\hspace{0pt}^^A
-%     |\@@_expanded:w|\hspace{0pt}|{\@@_split_first:w|\meta{arg}|}|
+%   |\exp_after:wN |\meta{function}^^A
+%     | \@@_expanded:w { \@@_split_first:w |\meta{arg}| }|.
 %    \begin{macrocode}
 \cs_new:Npn \@@_split_first:w #1
   {
@@ -580,8 +580,9 @@ and the derived files           etl.pdf
 % \end{macro}
 %
 % \begin{macro}[EXP]{\@@_rm_space:w}
+%   Fast macro to gobble an immediately following single space.
 %    \begin{macrocode}
-\exp_last_unbraced:NNo \cs_new:Npn \@@_rm_space:w \c_space_tl {}
+\use:n { \cs_new:Npn \@@_rm_space:w } ~ {}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -619,7 +620,7 @@ and the derived files           etl.pdf
 %   This test works pretty much the same way \cs{tl_if_head_is_group:nTF} works,
 %   but it is faster because it gets rid of the unnecessary \cs{if:w} and
 %   instead only works by argument gobbling. Drawback is that if you only expand
-%   the macro twice you'll end up with unbalanced braces.
+%   the macro twice you could end up with unbalanced braces.
 %    \begin{macrocode}
 \cs_new:Npn \@@_if_head_is_group:nTF #1
   {
@@ -672,6 +673,11 @@ and the derived files           etl.pdf
         }
       }
   }
+%    \end{macrocode}
+%   We also provide a version without the \cs{@@_unexpanded:w} around it for
+%   internal purposes, in which we'd otherwise have to remove it for correct
+%   behaviour.
+%    \begin{macrocode}
 \cs_new:Npn \@@_act:nnnnnnn #1#2#3#4#5#6#7
   {
     \@@_expanded:w
@@ -707,7 +713,8 @@ and the derived files           etl.pdf
 %   we got the limitation of not allowing \cs{s_@@_stop} we can use that token
 %   to get some fast tests. The first tests for a space at the front, and since
 %   that one is pretty fast we can use it to build a faster alternative to check
-%   for a starting |N|-type as well.
+%   for a starting |N|-type as well (with the drawback that this would yield
+%   |true| for an empty argument, something we have to keep in mind).
 %    \begin{macrocode}
 \group_begin:
   \cs_set:Npn \@@_tmp:n #1
@@ -747,9 +754,8 @@ and the derived files           etl.pdf
           \@@_act_if_space:w
             \s_@@_stop ##1 \s_@@_stop \@@_act_space:w {##4}
             \s_@@_stop #1  \s_@@_stop
-          \@@_if_head_is_group:nTF {##1}
-            { \@@_act_group:w {##5} }
-            \@@_act_normal:w {##3}
+          \@@_if_head_is_group:nT {##1} \@@_act_group:w
+          \@@_act_normal:w {##3} {##5}
           {##2} ##1 \s_@@_stop {##2} {##3} {##4} {##5}
         }
 %    \end{macrocode}
@@ -761,7 +767,7 @@ and the derived files           etl.pdf
       \cs_new:Npn \@@_act_if_space:w ##1 \s_@@_stop #1 ##2 \s_@@_stop {}
       \cs_new:Npn \@@_act_space:w
           ##1 \s_@@_stop #1 \s_@@_stop
-          \@@_if_head_is_group:nTF ##2 ##3 \@@_act_normal:w ##4
+          \@@_if_head_is_group:nT ##2 \@@_act_group:w \@@_act_normal:w ##3 ##4
           ##5 #1
         { ##1 {##5} \@@_act:w }
     }
@@ -773,22 +779,25 @@ and the derived files           etl.pdf
 % \end{macro}
 % \begin{macro}[EXP]{\@@_act_normal:w}
 %   For a normal token we can act quite easy, just pick up that token and leave
-%   the next iteration in the input stream.
+%   the next iteration in the input stream (|#2| is the group code, which is
+%   gobbled).
 %    \begin{macrocode}
-\cs_new:Npn \@@_act_normal:w #1#2#3 { #1 {#2} #3 \@@_act:w }
+\cs_new:Npn \@@_act_normal:w #1#2#3#4 { #1 {#3} #4 \@@_act:w }
 %    \end{macrocode}
 % \end{macro}
 % \begin{macro}[EXP]{\@@_act_group:w,\@@_act_if_end:w}
 %   Since the end marker is a single \cs{s_@@_stop} in a group, we have to test
 %   whether that end marker is found. The test here leads to undefined behaviour
-%   if the use supplied token list contains such a marker at an arbitrary point.
-%   If the end marker is found we call the final handler, else we provide the
-%   user supplied function the next group and input the next iteration.
+%   if the user supplied token list contains such a marker at an any point. If
+%   the end marker is found we call the final handler (for which we have to
+%   remove the \cs{s_@@_stop} to correctly grab its arguments), else we provide
+%   the user supplied function the next group and input the next iteration. |#1|
+%   is the normal function, which is gobbled.
 %    \begin{macrocode}
-\cs_new:Npn \@@_act_group:w #1#2#3#4
+\cs_new:Npn \@@_act_group:w \@@_act_normal:w #1#2#3#4
   {
     \@@_act_if_end:w #4 \use_i:nn \etl_act_do_final: \s_@@_stop
-    #1 {#3} {#4} \@@_act:w
+    #2 {#3} {#4} \@@_act:w
   }
 \cs_new:Npn \@@_act_if_end:w #1 \s_@@_stop {}
 %    \end{macrocode}
@@ -800,7 +809,7 @@ and the derived files           etl.pdf
 %   }
 % \begin{macro}[EXP]
 %   {
-%     \@@_act_output_normal:nN, \@@_act_output_space:n, \@@_act_output_group:nn
+%     \@@_act_output_normal:nN, \@@_act_output_space:n, \@@_act_output_group:nn,
 %     \@@_act_output_normal_pre:nN, \@@_act_output_space_pre:n,
 %     \@@_act_output_group_pre:nn
 %   }
@@ -863,12 +872,24 @@ and the derived files           etl.pdf
   { #2 \s_@@_stop {#1} }
 %    \end{macrocode}
 % \end{macro}
+%
 % \begin{macro}[EXP]{\etl_act_put_back:n}
-%   Place the first argument after the next iteration of the loop.
+%   Place the first argument after the next iteration of the loop. This macro
+%   might strip a set of braces around |#2|, because it could happen that the
+%   user provided code only leaves one group between this functions argument
+%   and \cs{@@_act:w}, but that would arguably be wrong input anyway, an easy
+%   fix would be to use
+% \begin{verbatim}
+% \cs_new:Npn \etl_act_put_back:n #1
+%   { \@@_act_put_back:nw {#1} \prg_do_nothing: }
+% \cs_new:Npn \@@_act_put_back:nw #1 #2 \@@_act:w { #2 \@@_act:w #1 }
+% \end{verbatim}
+%   instead of:
 %    \begin{macrocode}
 \cs_new:Npn \etl_act_put_back:n #1 #2 \@@_act:w { #2 \@@_act:w #1 }
 %    \end{macrocode}
 % \end{macro}
+%
 % \begin{macro}[EXP]
 %   {
 %     \etl_act_switch:nnn, \etl_act_switch_normal:n,
@@ -1149,7 +1170,7 @@ and the derived files           etl.pdf
     \fi:
   }
 %    \end{macrocode}
-%   Just like \cs{@@_if_in_group:nn}, \cs{@@_if_in_normal:nN} need to split off
+%   Just like \cs{@@_if_in_group:nn}, \cs{@@_if_in_normal:nN} needs to split off
 %   the first token of the pattern, for which \cs{@@_split_first:w} is used,
 %   and \cs{@@_if_in_space:n} needs to trim off a leading space.
 %    \begin{macrocode}
@@ -1229,8 +1250,8 @@ and the derived files           etl.pdf
 %     \@@_if_in_group_deep:nnnnn, \@@_if_in_group_deep_false:nnn
 %   }
 %   In essence this is the same as \cs{etl_if_in:nnTF}, but additionally
-%   every time a group is encountered we need search that group by recursion as
-%   well after directly comparing it to the pattern.
+%   every time a group is encountered we need to search that group by recursion
+%   as well after directly comparing it to the pattern.
 %    \begin{macrocode}
 \exp_args:Nno
 \use:n { \prg_new_conditional:Npnn \etl_if_in_deep:nn #1#2 { TF , T , F , p } }
@@ -1321,8 +1342,12 @@ and the derived files           etl.pdf
       {#3}
       {#1}
   }
+%    \end{macrocode}
+%   Here |{#1}| is used to get correct results from the first step of expansion
+%   done directly.
+%    \begin{macrocode}
 \exp_args:Nno \use:n { \cs_new:Npn \@@_token_replace_deep:Nnn #1#2#3 }
-  { { \etl_token_replace_all_deep:nNn {#3} #1 {#2} } }
+  { \exp_after:wN { \etl_token_replace_all_deep:nNn {#3} {#1} {#2} } }
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
