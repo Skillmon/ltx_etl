@@ -56,4 +56,40 @@
     \test_it:n { a~{b}~o~\ERROR }
   }
 
+\OMIT
+\cs_set:Npn \test_normal:nN #1#2
+  {
+    \str_case:nnF {#2}
+      {
+        N { \etl_act_switch_normal:n { \use_i:nn \etl_act_output_pre:n } }
+        S { \etl_act_switch_space:n { \etl_act_output:n S \use_none:n } }
+        G { \etl_act_switch_group:n \test_group_pre:nn }
+        A {
+            \etl_act_switch:nnn
+              { \use_i:nn \etl_act_output_pre:n }
+              { \etl_act_output:n S \use_none:n }
+              \test_group_pre:nn
+          }
+      }
+      { \etl_act_output:n #2 }
+  }
+\cs_set:Npn \test_space:n #1 { \etl_act_output:n { ~ } }
+\cs_set:Npn \test_group:nn #1#2 { \etl_act_output:n { {#2} } }
+\cs_set:Npn \test_group_pre:nn #1#2 { \etl_act_output_pre:n { {#2} } }
+\cs_set:Npn \test_it:n #1
+  {
+    .
+    \etl_act:nnnnn \test_normal:nN \test_space:n \test_group:nn {} {#1}
+    . \NEWLINE
+  }
+\TIMO
+
+\TESTEXP{act~ switch}
+  {
+    \test_it:n { a~{b}Na~{b} }
+    \test_it:n { a~{b}Sa~{b} }
+    \test_it:n { a~{b}Ga~{b} }
+    \test_it:n { a~{b}Aa~{b} }
+  }
+
 \END
