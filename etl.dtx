@@ -1765,25 +1765,39 @@ and the derived files           etl.pdf
 %
 % \subsection{Defining new modifiers}
 %
+% The implementation of |replace_once| and |replace_all| is modelled closely on
+% the implementation used in \pkg{l3tl}. The difference is that we use a hard
+% coded delimiter (\cs{s_@@_stop}) instead of searching for one that is always
+% legal (we can't do redefinitions, so can't change the delimiter later based on
+% the token list input).
+%
+%
 % \begin{macro}
 %   {
 %     \@@_new_replace_def:NNn,
 %     \@@_new_replace_def_aux:NnNnN, \@@_new_replace_def_aux:Nn
 %   }
-%   We need to another loop to guarantee unique names, if everything's alright
-%   we go on and define the user function using |#1| of
-%   \cs{@@_new_replace_def:NNn}.
+%   We need another loop to guarantee unique names, if everything's alright we
+%   go on and define the user function using |#1| of
+%   \cs{@@_new_replace_def:NNn}. An empty search pattern is forbidden and should
+%   throw an error.
 %    \begin{macrocode}
+\msg_new:nnn { etl } { empty-search-text }
+  { The~ search~ text~ of~ #1 must~ not~ be~ empty. }
 \cs_new_protected:Npn \@@_new_replace_def:NNn #1#2#3
   {
-    \scan_stop:
-    \if_false: { \fi:
-    \exp_args:Nc \@@_new_replace_def_aux:NnNnN
-      { @@_user_function ~ replace ~ \tl_to_str:n {#3} ~ :w }
-      ?
-      #2 {#3}
-      #1
-    \if_false: } \fi:
+    \tl_if_empty:nTF {#3}
+      { \msg_error:nnn { etl } { empty-search-text } { #2 } }
+      {
+        \scan_stop:
+        \if_false: { \fi:
+        \exp_args:Nc \@@_new_replace_def_aux:NnNnN
+          { @@_user_function ~ replace ~ \tl_to_str:n {#3} ~ :Nnw }
+          ?
+          #2 {#3}
+          #1
+        \if_false: } \fi:
+      }
   }
 \cs_new_protected:Npn \@@_new_replace_def_aux:NnNnN #1#2#3#4#5
   {
@@ -1794,7 +1808,7 @@ and the derived files           etl.pdf
           { #5 #1#3 {#4} }
           {
             \exp_args:Nc \@@_new_replace_def_aux:NnNnN
-              { @@_user_function ~ replace #2 ~ \tl_to_str:n {#4} ~ :w }
+              { @@_user_function ~ replace #2 ~ \tl_to_str:n {#4} ~ :Nnw }
               { #2? } #3 {#4} #5
           }
       }
@@ -1805,44 +1819,37 @@ and the derived files           etl.pdf
   }
 %    \end{macrocode}
 %   The auxiliary macro uses a loop for the replacement. This is also used for
-%   the |once| variant. This a) saves internal functions if both an |all| and an
-%   |once| function are generated for the same search text, and allows the
-%   replacement text to contain \cs{s_@@_stop} for both functions.
+%   the |once| variant. This saves internal functions if both an |all| and a
+%   |once| function are generated for the same search text (though the |once|
+%   variant could be coded easier and faster otherwise, but the performance hit
+%   should be small).
 %    \begin{macrocode}
 \cs_new_protected:Npn \@@_new_replace_def_aux:Nn #1#2
   {
-    \cs_gset:Npn #1 ##1 ##2#2
-      { \@@_new_replace_grab_rest:w { \use_none:nn ##2##1 } #1 {##1} {}{} }
+    \cs_gset:Npn #1 ##1##2 ##3#2
+      {
+        \@@_new_replace_wrap:w ##3 \s_@@_stop \@@_unexpanded:w {##2}
+        ##1 #1 {##2} {}{}
+      }
   }
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\@@_new_replace_grab_rest:w}
-% \begin{macro}{\@@_new_replace_done:w, \@@_new_replace_done_aux:w}
-% \begin{macro}{\@@_new_replace_done_once:w, \@@_new_replace_done_once_aux:w}
+% \begin{macro}{\@@_new_replace_wrap:w}
+% \begin{macro}{\@@_new_replace_once:w}
+% \begin{macro}{\@@_new_replace_done:w}
 %   We need a few auxiliaries for the two replacement variants here. The first
-%   is just used to prevent accidental brace stripping, the others will be used
-%   to protect the remainder of the token list on which we work from further
-%   expanding, and remove the remainder of the loop.
+%   just grabs the already processed part of the token list and protects it from
+%   further expanding. The second breaks the loop for the |once| variant by
+%   protecting the remainder of the token list from further expanding. The last
+%   just gobbles the remainder of the loop by using an unbalanced brace trick.
 %    \begin{macrocode}
-\cs_new:Npn \@@_new_replace_grab_rest:w #1 \s_@@_stop #2
-  { #2 #1 \s_@@_stop {#2} }
-\cs_new:Npn \@@_new_replace_done:w #1 { \@@_new_replace_done_aux:w #1 }
-\cs_new:Npn \@@_new_replace_done_aux:w #1 \s_@@_stop
-  {
-    \@@_unexpanded:w \exp_after:wN {#1}
-    \exp_after:wN \use_none:n \exp_after:wN { \if_false: } \fi:
-  }
-\cs_new:Npn \@@_new_replace_done_once:w #1
-  {
-    \@@_unexpanded:w \exp_after:wN {#1}
-    \@@_new_replace_done_once_aux:w
-  }
-\cs_new:Npn \@@_new_replace_done_once_aux:w #1#2 #3\s_@@_stop
-  {
-    \@@_unexpanded:w \exp_after:wN { \use_none:nn #3 }
-    \exp_after:wN \use_none:n \exp_after:wN { \if_false: } \fi:
-  }
+\cs_new:Npn \@@_new_replace_wrap:w #1\s_@@_stop
+  { \@@_unexpanded:w \exp_after:wN { \use_none:nn #1 } }
+\cs_new:Npn \@@_new_replace_once:w #1#2 #3\s_@@_stop
+  { \@@_unexpanded:w \exp_after:wN { \use_none:nn #3 } }
+\cs_new:Npn \@@_new_replace_done:w
+  { \exp_after:wN \use_none:n \exp_after:wN { \if_false: } \fi: }
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1864,9 +1871,8 @@ and the derived files           etl.pdf
         \@@_unexpanded:w \@@_expanded:w
           {{
             \if_false: { \fi:
-            #1 {##2} {}{}
-              ##1 \s_@@_stop \@@_new_replace_done_once:w
-              #3  \s_@@_stop \@@_new_replace_done:w
+              #1 \@@_new_replace_once:w {##2} {}{} ##1 \s_@@_stop
+              \@@_new_replace_done:w #3
             }
           }}
       }
@@ -1890,9 +1896,8 @@ and the derived files           etl.pdf
         \@@_unexpanded:w \@@_expanded:w
           {{
             \if_false: { \fi:
-            #1 {##2} {}{}
-              ##1 \s_@@_stop { \@@_unexpanded:w \exp_after:wN }
-              #3  \s_@@_stop \@@_new_replace_done:w
+              #1 #1 {##2} {}{} ##1 \s_@@_stop
+              \@@_new_replace_done:w #3
             }
           }}
       }
