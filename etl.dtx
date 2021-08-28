@@ -457,7 +457,10 @@ and the derived files           etl.pdf
 % Functions generated with the means in this section are roughly as fast as the
 % \pkg{l3tl} variants of them (there might be performance differences; in any
 % case they are faster than the generic functions above), but have at least one
-% fixed argument.
+% fixed argument. They don't have the drawback of not being able to tell apart
+% an active character from a token with the same character code and different
+% category code and they don't normalise braces to \texttt{\{\textsubscript{1}}
+% and \texttt{\}\textsubscript{2}}.
 %
 % \subsubsection{Conditionals}
 %
