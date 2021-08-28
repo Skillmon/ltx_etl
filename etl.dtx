@@ -110,9 +110,9 @@ and the derived files           etl.pdf
 % to unexpandable functions found inside the \pkg{l3tl} module of \pkg{expl3}.
 % All user functions must not contain the tokens \cs{s__etl_stop}\footnote{At
 % any nesting level of groups} or \cs{__etl_act_result:n}\footnote{Outside of
-% some local brace groups} in any argument (but there might be other forbidden
-% tokens, all of which are internals to this package, and usually shouldn't
-% somehow end up inside the input stream by accident).
+% some local brace groups} in any argument unless specified otherwise (there
+% might be other forbidden tokens, all of which are internals to this package,
+% and usually shouldn't somehow end up inside the input stream by accident).
 %
 % There is another limitation of this package: There are tokens which cannot
 % expandably be differentiated from each other, those are active characters let
