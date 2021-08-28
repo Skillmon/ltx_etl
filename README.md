@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 # etl -- expandable token list operations
 
-Version 2021-08-20 v0.1
+Version 2021-08-28 v0.2
 
 Released under the LaTeX Project Public License v1.3c or later
 See http://www.latex-project.org/lppl.txt
