@@ -406,7 +406,7 @@ and the derived files           etl.pdf
 %
 % \begin{function}[EXP]{\etl_replace_once:nnn}
 %   \begin{syntax}
-%     \cs{etl_replace_once:nnn} \meta{token list} \meta{search text} \meta{replacement}
+%     \cs{etl_replace_once:nnn} \Arg{token list} \Arg{search text} \Arg{replacement}
 %   \end{syntax}
 %   This function will replace the first occurrence of \meta{search text}
 %   inside of \meta{token list} that is not hidden inside a group with
@@ -422,7 +422,7 @@ and the derived files           etl.pdf
 %
 % \begin{function}[EXP]{\etl_replace_all:nnn}
 %   \begin{syntax}
-%     \cs{etl_replace_all:nnn} \meta{token list} \meta{search text} \meta{replacement}
+%     \cs{etl_replace_all:nnn} \Arg{token list} \Arg{search text} \Arg{replacement}
 %   \end{syntax}
 %   This function will replace all occurrences of \meta{search text}
 %   inside of \meta{token list} that are not hidden inside a group with
@@ -438,7 +438,7 @@ and the derived files           etl.pdf
 %
 % \begin{function}[EXP]{\etl_replace_all_deep:nnn}
 %   \begin{syntax}
-%     \cs{etl_replace_all_deep:nnn} \meta{token list} \meta{search text} \meta{replacement}
+%     \cs{etl_replace_all_deep:nnn} \Arg{token list} \Arg{search text} \Arg{replacement}
 %   \end{syntax}
 %   This function will replace all occurrences of \meta{search text}
 %   inside of \meta{token list} with \meta{replacement}.
@@ -459,14 +459,14 @@ and the derived files           etl.pdf
 % case they are faster than the generic functions above), but have at least one
 % fixed argument. They don't have the drawback of not being able to tell apart
 % an active character from a token with the same character code and different
-% category code and they don't normalise braces to \texttt{\{\textsubscript{1}}
-% and \texttt{\}\textsubscript{2}}.
+% category code if the active character was let to it and they don't normalise
+% braces to \texttt{\{\textsubscript{1}} and \texttt{\}\textsubscript{2}}.
 %
 % \subsubsection{Conditionals}
 %
 % \begin{function}{\etl_new_if_in:Nnn}
 %   \begin{syntax}
-%     \cs{etl_new_if_in:Nnn} \meta{function} \meta{search text} \meta{conditions}
+%     \cs{etl_new_if_in:Nnn} \meta{function} \Arg{search text} \Arg{conditions}
 %   \end{syntax}
 %   This will define a new \meta{function} which will act as a conditional and
 %   search for \meta{search text} inside of an |n|-type argument completely
