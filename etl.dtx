@@ -452,10 +452,12 @@ and the derived files           etl.pdf
 % \end{function}
 %
 %
-% \subsection{New expandable fast tests}
+% \subsection{New expandable functions}
 %
 % Functions generated with the means in this section are as fast as the
 % \pkg{l3tl} variants of them, but have at least one fixed argument.
+%
+% \subsubsection{Conditionals}
 %
 % \begin{function}{\etl_new_if_in:Nnn}
 %   \begin{syntax}
@@ -478,6 +480,57 @@ and the derived files           etl.pdf
 % \etl_new_if_in:Nnn \my_if_a_in:n { a } { TF }
 % \my_if_a_in:nTF { a text } { true } { false }
 % \my_if_a_in:nTF {   text } { true } { false }
+% \end{verbatim}
+%
+%
+% \subsubsection{Modifiers}
+%
+% \begin{function}{\etl_new_replace_once:Nn}
+%   \begin{syntax}
+%     \cs{etl_new_replace_once:Nn} \meta{function} \Arg{search text}
+%   \end{syntax}
+%   This defines a new \meta{function} that'll accept two arguments (the first
+%   being a token list, the second a replacement). The generated \meta{function}
+%   will replace the first occurrence of \meta{search text} inside the token
+%   list with replacement. It'll ignore things hidden inside a group in the
+%   token list.  Neither the \meta{search text} nor the token list given to the
+%   generated \meta{function} can contain \cs{s__etl_stop} (this would result in
+%   undefined behaviour), the given replacement on the other hand might contain
+%   that token. Additionally \meta{search text} can't contain tokens of category
+%   group begin or group end (usually |{| and |}|) or macro parameters (usually
+%   |#|).
+%
+%   \begin{texnote}
+%     The result of \meta{function} is returned within \cs{exp_not:n}, which
+%     means that the token list does not expand further when appearing in an
+%     \hbox{|x|- or} |e|-type argument expansion. The result will be returned
+%     after exactly two steps of expansion.
+%   \end{texnote}
+% \end{function}
+% So the following would yield |AcDC|:
+% \begin{verbatim}
+% \etl_new_replace_once:Nn \my_replace_C_once:nn { C }
+% \my_replace_C_once:nn { ACDC } { c }
+% \end{verbatim}
+%
+% \begin{function}{\etl_new_replace_all:Nn}
+%   \begin{syntax}
+%     \cs{etl_new_replace_all:Nn} \meta{function} \Arg{search text}
+%   \end{syntax}
+%   This behaves like \cs{etl_new_replace_once:Nn}, but the \meta{function} will
+%   replace all occurrences of \meta{search text} instead of just the first.
+%
+%   \begin{texnote}
+%     The result of \meta{function} is returned within \cs{exp_not:n}, which
+%     means that the token list does not expand further when appearing in an
+%     \hbox{|x|- or} |e|-type argument expansion. The result will be returned
+%     after exactly two steps of expansion.
+%   \end{texnote}
+% \end{function}
+% So the following would yield |AcDc|:
+% \begin{verbatim}
+% \etl_new_replace_all:Nn \my_replace_C_all:nn { C }
+% \my_replace_C_all:nn { ACDC } { c }
 % \end{verbatim}
 % 
 %
@@ -666,12 +719,10 @@ and the derived files           etl.pdf
 \cs_new:Npn \etl_act:nnnnnnn #1#2#3#4#5#6#7
   {
     \@@_unexpanded:w \@@_expanded:w
-      {
-        {
-          \@@_act:w #7 {\s_@@_stop} . \s_@@_stop {#5} {#1} {#2} {#3}
-          \@@_act_result:n {#6} {#4}
-        }
-      }
+      {{
+        \@@_act:w #7 {\s_@@_stop} . \s_@@_stop {#5} {#1} {#2} {#3}
+        \@@_act_result:n {#6} {#4}
+      }}
   }
 %    \end{macrocode}
 %   We also provide a version without the \cs{@@_unexpanded:w} around it for
@@ -1298,6 +1349,9 @@ and the derived files           etl.pdf
 % \end{macro}
 % \end{macro}
 %
+%
+% \subsection{Expandably modify token lists}
+%
 % \begin{macro}[EXP]{\etl_token_replace_all:nNn}
 % \begin{macro}[EXP]{\@@_token_replace:NnnN}
 %   Replaceing a single token (and in fact the same is true for all the
@@ -1647,23 +1701,46 @@ and the derived files           etl.pdf
 %    \end{macrocode}
 % \end{macro}
 %
+%
+% \subsection{Defining new tests}
+%
 % \begin{macro}{\etl_new_if_in:Nnn}
-% \begin{macro}{\@@_new_if_in:NNnn}
+% \begin{macro}{\@@_new_if_in:NnNnn, \@@_new_if_in:NNnn}
 %   These tests work essentially in the same way as \cs{tl_if_in:nnTF}, but
 %   instead they use a predefined internal macro so that no definition at use
-%   time is necessary.
+%   time is necessary. We use a small loop to get a unique auxiliary macro name
+%   for the search text.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new_protected:Npn \etl_new_if_in:Nnn #1#2 }
-  {
-    \exp_args:Nc \@@_new_if_in:NNnn
-      { @@_user_function ~ \cs_to_str:N #1 ~ \tl_to_str:n {#2} :w }
-      #1 {#2}
-  }
-\cs_new_protected:Npn \@@_new_if_in:NNnn #1#2#3#4
+\exp_args:Nno \use:n { \cs_new_protected:Npn \etl_new_if_in:Nnn #1#2#3 }
   {
     \scan_stop:
     \if_false: { \fi:
-    \cs_new:Npn #1 ##1 #3 {}
+    \exp_args:Nc \@@_new_if_in:NnNnn
+      { @@_user_function ~ if_in ~ \tl_to_str:n {#2} :w }
+      ?
+      #1 {#2}
+      {#3}
+    \if_false: } \fi:
+  }
+\cs_new_protected:Npn \@@_new_if_in:NnNnn #1#2#3#4
+  {
+    \cs_if_exist:NTF #1
+      {
+        \cs_set:Npn \@@_tmp:w ##1 #4 {}
+        \cs_if_eq:NNTF #1 \@@_tmp:w
+          { \@@_new_if_in:NNnn #1 #3 {#4} }
+          {
+            \exp_args:Nc \@@_new_if_in:NnNnn
+              { @@_user_function ~ if_in #2 ~ \tl_to_str:n {#4} :w }
+              { #2? }
+              #3 {#4}
+          }
+      }
+      { \@@_new_if_in:NNnn #1 #3 {#4} }
+  }
+\cs_new_protected:Npn \@@_new_if_in:NNnn #1#2#3#4
+  {
+    \cs_gset:Npn #1 ##1 #3 {}
     \prg_new_conditional:Npnn #2 ##1 {#4}
       {
         \if:w
@@ -1678,7 +1755,145 @@ and the derived files           etl.pdf
           \prg_return_false:
         \fi:
       }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+%
+% \subsection{Defining new modifiers}
+%
+% \begin{macro}
+%   {
+%     \@@_new_replace_def:NNn,
+%     \@@_new_replace_def_aux:NnNnN, \@@_new_replace_def_aux:Nn
+%   }
+%   We need to another loop to guarantee unique names, if everything's alright
+%   we go on and define the user function using |#1| of
+%   \cs{@@_new_replace_def:NNn}.
+%    \begin{macrocode}
+\cs_new_protected:Npn \@@_new_replace_def:NNn #1#2#3
+  {
+    \scan_stop:
+    \if_false: { \fi:
+    \exp_args:Nc \@@_new_replace_def_aux:NnNnN
+      { @@_user_function ~ replace ~ \tl_to_str:n {#3} ~ :w }
+      ?
+      #2 {#3}
+      #1
     \if_false: } \fi:
+  }
+\cs_new_protected:Npn \@@_new_replace_def_aux:NnNnN #1#2#3#4#5
+  {
+    \cs_if_exist:NTF #1
+      {
+        \@@_new_replace_def_aux:Nn \@@_tmp:w {#4}
+        \cs_if_eq:NNTF #1 \@@_tmp:w
+          { #5 #1#3 {#4} }
+          {
+            \exp_args:Nc \@@_new_replace_def_aux:NnNnN
+              { @@_user_function ~ replace #2 ~ \tl_to_str:n {#4} ~ :w }
+              { #2? } #3 {#4} #5
+          }
+      }
+      {
+        \@@_new_replace_def_aux:Nn #1 {#4}
+        #5 #1#3 {#4}
+      }
+  }
+%    \end{macrocode}
+%   The auxiliary macro uses a loop for the replacement. This is also used for
+%   the |once| variant. This a) saves internal functions if both an |all| and an
+%   |once| function are generated for the same search text, and allows the
+%   replacement text to contain \cs{s_@@_stop} for both functions.
+%    \begin{macrocode}
+\cs_new_protected:Npn \@@_new_replace_def_aux:Nn #1#2
+  {
+    \cs_gset:Npn #1 ##1 ##2#2
+      { \@@_new_replace_grab_rest:w { \use_none:nn ##2##1 } #1 {##1} {}{} }
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@@_new_replace_grab_rest:w}
+% \begin{macro}{\@@_new_replace_done:w, \@@_new_replace_done_aux:w}
+% \begin{macro}{\@@_new_replace_done_once:w, \@@_new_replace_done_once_aux:w}
+%   We need a few auxiliaries for the two replacement variants here. The first
+%   is just used to prevent accidental brace stripping, the others will be used
+%   to protect the remainder of the token list on which we work from further
+%   expanding, and remove the remainder of the loop.
+%    \begin{macrocode}
+\cs_new:Npn \@@_new_replace_grab_rest:w #1 \s_@@_stop #2
+  { #2 #1 \s_@@_stop {#2} }
+\cs_new:Npn \@@_new_replace_done:w #1 { \@@_new_replace_done_aux:w #1 }
+\cs_new:Npn \@@_new_replace_done_aux:w #1 \s_@@_stop
+  {
+    \@@_unexpanded:w \exp_after:wN {#1}
+    \exp_after:wN \use_none:n \exp_after:wN { \if_false: } \fi:
+  }
+\cs_new:Npn \@@_new_replace_done_once:w #1
+  {
+    \@@_unexpanded:w \exp_after:wN {#1}
+    \@@_new_replace_done_once_aux:w
+  }
+\cs_new:Npn \@@_new_replace_done_once_aux:w #1#2 #3\s_@@_stop
+  {
+    \@@_unexpanded:w \exp_after:wN { \use_none:nn #3 }
+    \exp_after:wN \use_none:n \exp_after:wN { \if_false: } \fi:
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\etl_new_replace_once:Nn}
+% \begin{macro}{\@@_new_replace_once:NNn}
+%   The |once| variant will use \cs{@@_new_replace_done_once:w} if the
+%   replacement is successful (that will remove the remainder of the loop, and
+%   protect both the replacement and the rest of the token list on which we work
+%   from further expanding).
+%    \begin{macrocode}
+\cs_new_protected:Npn \etl_new_replace_once:Nn
+  { \@@_new_replace_def:NNn \@@_new_replace_once:NNn }
+\cs_new_protected:Npn \@@_new_replace_once:NNn #1#2#3
+  {
+    \cs_new:Npn #2 ##1##2
+      {
+        \@@_unexpanded:w \@@_expanded:w
+          {{
+            \if_false: { \fi:
+            #1 {##2} {}{}
+              ##1 \s_@@_stop \@@_new_replace_done_once:w
+              #3  \s_@@_stop \@@_new_replace_done:w
+            }
+          }}
+      }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\etl_new_replace_all:Nn}
+% \begin{macro}{\@@_new_replace_all:NNn}
+%   The |all| variant will directly protect the replacement from further
+%   expanding and reiterate (due to the way the auxiliary is defined) until the
+%   replacement isn't found anymore.
+%    \begin{macrocode}
+\cs_new_protected:Npn \etl_new_replace_all:Nn
+  { \@@_new_replace_def:NNn \@@_new_replace_all:NNn }
+\cs_new_protected:Npn \@@_new_replace_all:NNn #1#2#3
+  {
+    \cs_new:Npn #2 ##1##2
+      {
+        \@@_unexpanded:w \@@_expanded:w
+          {{
+            \if_false: { \fi:
+            #1 {##2} {}{}
+              ##1 \s_@@_stop { \@@_unexpanded:w \exp_after:wN }
+              #3  \s_@@_stop \@@_new_replace_done:w
+            }
+          }}
+      }
   }
 %    \end{macrocode}
 % \end{macro}
