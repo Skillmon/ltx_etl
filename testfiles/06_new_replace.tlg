@@ -1,0 +1,20 @@
+This is a generated file for the l3build validation system.
+Don't change this file in any respect.
+============================================================
+TEST 1: define new
+============================================================
+Defining \test_replace_char_once:nn on line ...
+Defining \test_replace_char_all:nn on line ...
+Defining \test_replace_act_once:nn on line ...
+Defining \test_replace_act_all:nn on line ...
+Abac
+AbAc
+Abac
+AbAc
+============================================================
+============================================================
+TEST 2: two steps
+============================================================
+{a }StRiNg{ is nice}
+{a }StRiNg{ is nice}
+============================================================

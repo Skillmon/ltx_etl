@@ -1,0 +1,50 @@
+\input regression-test
+
+\RequirePackage[enable-debug]{expl3}
+\ExplSyntaxOn
+\debug_on:n { check-declarations , deprecation , log-functions }
+\ExplSyntaxOff
+
+\RequirePackage{etl}
+
+\START
+\ExplSyntaxOn
+
+\OMIT
+\tl_new:N \l_test_tl
+\cs_new:Npn \test_gen_char:nn #1#2
+  { \exp_args:No \exp_not:o { \char_generate:nn { `#1 } {#2} } }
+\cs_generate_variant:Nn \etl_new_replace_once:Nn { Ne }
+\cs_generate_variant:Nn \etl_new_replace_all:Nn { Ne }
+\tl_set:Nn \l_test_tl { ACTIVE }
+\char_set_active_eq:NN a \l_test_tl
+\tl_set:Nx \l_test_tl { \test_gen_char:nn a {13} b \test_gen_char:nn a {13} c }
+\TIMO
+
+\TEST{define~ new}
+  {
+    \group_begin:
+    \etl_new_replace_once:Nn \test_replace_char_once:nn { a }
+    \etl_new_replace_all:Nn  \test_replace_char_all:nn { a }
+    \etl_new_replace_once:Ne \test_replace_act_once:nn { \test_gen_char:nn a {13} }
+    \etl_new_replace_all:Ne  \test_replace_act_all:nn { \test_gen_char:nn a {13} }
+    \group_end:
+    \TYPE { \test_replace_char_once:nn { abac } { A } }
+    \TYPE { \test_replace_char_all:nn  { abac } { A } }
+    \TYPE { \exp_args:No \test_replace_act_once:nn \l_test_tl { A } }
+    \TYPE { \exp_args:No \test_replace_act_all:nn  \l_test_tl { A } }
+  }
+
+\OMIT
+\etl_new_replace_once:Nn \test_replace_once:nn { string }
+\etl_new_replace_all:Nn  \test_replace_all:nn  { string }
+\cs_set:Npn \test_tmp:n #1 { \exp_args:No \exp_not:o {#1} \NEWLINE }
+\TIMO
+
+\TESTEXP{two~ steps}
+  {
+    \test_tmp:n { \test_replace_once:nn { {a~} string{~ is~ nice} } { StRiNg } }
+    \test_tmp:n { \test_replace_all:nn  { {a~} string{~ is~ nice} } { StRiNg } }
+  }
+
+\END
