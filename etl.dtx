@@ -927,8 +927,11 @@ and the derived files           etl.pdf
 %   Drawback of this is that spaces and braces are not normalised for the
 %   remainder of that call (which is what we had documented).
 %    \begin{macrocode}
-\cs_new:Npn \@@_act_unexpanded_rest:w #1 \@@_act:w
-  { \@@_act_unexpanded_rest_aux:w }
+\cs_new:Npn \@@_act_unexpanded_rest:w #1 \@@_act:w #2#
+  {
+    \@@_unexpanded:w {#2}
+    \@@_act_unexpanded_rest_aux:n
+  }
 \cs_new:Npn \@@_act_unexpanded_rest_aux:w #1#
   {
     \@@_unexpanded:w {#1}
@@ -941,7 +944,8 @@ and the derived files           etl.pdf
     \@@_act_unexpanded_rest_aux:w
   }
 \cs_new:Npn \@@_act_unexpanded_rest_done:w
-    \s_@@_stop #1 . \s_@@_stop #2#3#4#5
+    \s_@@_stop #1 \@@_act_unexpanded_rest_aux:w
+    . \s_@@_stop #2#3#4#5
     \@@_act_result:n #6#7
   {}
 %    \end{macrocode}
@@ -1481,7 +1485,7 @@ and the derived files           etl.pdf
 %   the remainder of the pattern, the full pattern, delayed tokens (those
 %   which matched the pattern), the replacement, and a marker which should tell
 %   us whether we want to only replace the first match (if so use
-%   \cs{s_@@_mark}, else any other single token).
+%   \cs{@@_act_unexpanded_rest:w}, else \cs{prg_do_nothing:}).
 %    \begin{macrocode}
 \exp_args:Nno \use:n { \cs_new:Npn \etl_replace_all:nnn #1#2#3 }
   {
@@ -1693,7 +1697,7 @@ and the derived files           etl.pdf
 %
 % \begin{macro}[EXP]{\etl_replace_once:nnn}
 %   And this is the same as the |all| variant except that we now use the
-%   \cs{s_@@_mark} marker inside the status.
+%   \cs{@@_act_unexpanded_rest:w} marker inside the status.
 %    \begin{macrocode}
 \exp_args:Nno \use:n { \cs_new:Npn \etl_replace_once:nnn #1#2#3 }
   {
