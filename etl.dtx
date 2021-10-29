@@ -132,7 +132,10 @@ and the derived files           etl.pdf
 % the parser doesn't consider the character code of tokens with category 1 or 2
 % (group begin and group end, typically |{}|), instead all tokens found with
 % these two category codes are normalised to \texttt{\{\textsubscript{1}} and
-% \texttt{\}\textsubscript{2}}.
+% \texttt{\}\textsubscript{2}} (an exception to this rule are the functions
+% \cs{etl_token_replace_once:nNn} and \cs{etl_replace_once:nnn} in which this
+% normalisation is only done up to the replacement, and the rest of the input is
+% forwarded unchanged).
 %
 % The core macro \cs{etl_act:nnnnnnn} is modelled after an internal of
 % \pkg{l3tl} called \cs{__tl_act:NNNn} but with some more possibilities added.
@@ -603,18 +606,6 @@ and the derived files           etl.pdf
 %
 % \subsection{Small auxiliaries}
 %
-% \begin{macro}[EXP]{\@@_if_mark:nTF,\@@_if_mark:w,\@@_if_mark_true:w}
-%   A small check whether some argument contains the scan mark \cs{s_@@_mark},
-%   the mark should always be the last token of the argument (and only a single
-%   such mark should be contained) to ensure correct behaviour.
-%    \begin{macrocode}
-\cs_new:Npn \@@_if_mark:nTF #1
-  { \@@_if_mark:w #1 \@@_if_mark_true:w \s_@@_mark \use_ii:nn }
-\cs_new:Npn \@@_if_mark:w #1 \s_@@_mark {}
-\cs_new:Npn \@@_if_mark_true:w \s_@@_mark \use_ii:nn #1#2 {#1}
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}[EXP]{\@@_split_first:w}
 %   Can be used to extract the first element from a token list, it should always
 %   be used like this:
@@ -919,6 +910,41 @@ and the derived files           etl.pdf
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}[EXP]
+%   {
+%     \@@_act_unexpanded_rest:w,
+%     \@@_act_unexpanded_rest_aux:w, \@@_act_unexpanded_rest_aux:n,
+%     \@@_act_unexpanded_rest_done:w
+%   }
+%   This function tries to shortcut as much as possible to output the
+%   remainder of the token list in an unchanged way. This can be done by
+%   grabbing everything up to the next opening brace (since the stop marker is
+%   contained in a group), outputting that, and checking whether we're done. If
+%   not output the next group and loop. The first step removes the act code.
+%
+%   Drawback of this is that spaces and braces are not normalised for the
+%   remainder of that call (which is what we had documented).
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_unexpanded_rest:w #1 \@@_act:w
+  { \@@_act_unexpanded_rest_aux:w }
+\cs_new:Npn \@@_act_unexpanded_rest_aux:w #1#
+  {
+    \@@_unexpanded:w {#1}
+    \@@_act_unexpanded_rest_aux:n
+  }
+\cs_new:Npn \@@_act_unexpanded_rest_aux:n #1
+  {
+    \@@_act_if_end:w #1 \@@_act_unexpanded_rest_done:w \s_@@_stop
+    { \@@_unexpanded:w {#1} }
+    \@@_act_unexpanded_rest_aux:w
+  }
+\cs_new:Npn \@@_act_unexpanded_rest_done:w
+    \s_@@_stop #1 . \s_@@_stop #2#3#4#5
+    \@@_act_result:n #6#7
+  {}
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}[EXP]{\etl_act_status:n}
@@ -1359,7 +1385,7 @@ and the derived files           etl.pdf
 %
 % \begin{macro}[EXP]{\etl_token_replace_all:nNn}
 % \begin{macro}[EXP]{\@@_token_replace:NnnN}
-%   Replaceing a single token (and in fact the same is true for all the
+%   Replacing a single token (and in fact the same is true for all the
 %   replacement actions in this package) doesn't need reordering and no post
 %   processing, so we can use in place output using \cs{@@_unexpanded:w}. We
 %   store the token we want to replace inside the act function, as well as an
@@ -1418,10 +1444,7 @@ and the derived files           etl.pdf
 \exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_once:nNn #1#2#3 }
   {
     \etl_act:nnnnnn
-      {
-        \@@_token_replace:NnnN #2
-          { \etl_act_switch_normal:n \@@_act_unexpanded_normal:nN }
-      }
+      { \@@_token_replace:NnnN #2 \@@_act_unexpanded_rest:w }
       \@@_act_unexpanded_space:n
       \@@_act_unexpanded_group:nn
       \use_none:nn
@@ -1467,7 +1490,7 @@ and the derived files           etl.pdf
       \@@_replace_space:n
       \@@_replace_group:nn
       \@@_replace_final:nn
-      { {#2} {#2} {} {#3} \scan_stop: }
+      { {#2} {#2} {} {#3} \prg_do_nothing: }
       {#1}
   }
 %    \end{macrocode}
@@ -1524,15 +1547,8 @@ and the derived files           etl.pdf
         \@@_if_empty:nTF {#2}
           {
             \@@_unexpanded:w {#5}
-            \@@_if_mark:nTF {#6}
-              {
-                \etl_act_switch:nnn
-                  \@@_act_unexpanded_normal:nN
-                  \@@_act_unexpanded_space:n
-                  \@@_act_unexpanded_group:nn
-                \etl_act_status:n { {} {} {} {} #6 }
-              }
-              { \etl_act_status:n { {#3} {#3} {} {#5} #6 } }
+            #6
+            \etl_act_status:n { {#3} {#3} {} {#5} #6 }
           }
           { \etl_act_status:n { {#2} {#3} { #4 #7 } {#5} #6 } }
       }
@@ -1561,15 +1577,8 @@ and the derived files           etl.pdf
     \@@_if_empty:nTF {#1}
       {
         \@@_unexpanded:w {#4}
-        \@@_if_mark:nTF {#5}
-          {
-            \etl_act_switch:nnn
-              \@@_act_unexpanded_normal:nN
-              \@@_act_unexpanded_space:n
-              \@@_act_unexpanded_group:nn
-            \etl_act_status:n { {} {} {} {} #5 }
-          }
-          { \etl_act_status:n { {#2} {#2} {} {#4} #5 } }
+        #5
+        \etl_act_status:n { {#2} {#2} {} {#4} #5 }
       }
       { \etl_act_status:n { {#1} {#2} { #3 ~ } {#4} #5 } }
   }
@@ -1598,15 +1607,8 @@ and the derived files           etl.pdf
         \@@_if_empty:nTF {#2}
           {
             \@@_unexpanded:w {#5}
-            \@@_if_mark:nTF {#6}
-              {
-                \etl_act_switch:nnn
-                  \@@_act_unexpanded_normal:nN
-                  \@@_act_unexpanded_space:n
-                  \@@_act_unexpanded_group:nn
-                \etl_act_status:n { {} {} {} {} #6 }
-              }
-              { \etl_act_status:n { {#3} {#3} {} {#5} #6 } }
+            #6
+            \etl_act_status:n { {#3} {#3} {} {#5} #6 }
           }
           { \etl_act_status:n { {#2} {#3} { #4 {#7} } {#5} #6 } }
       }
@@ -1640,7 +1642,7 @@ and the derived files           etl.pdf
       \@@_replace_space:n
       \@@_replace_group_deep:nn
       \@@_replace_final:nn
-      { {#2} {#2} {} {#3} \scan_stop: }
+      { {#2} {#2} {} {#3} \prg_do_nothing: }
       {#1}
   }
 \cs_new:Npn \@@_replace_group_deep:nn #1
@@ -1700,7 +1702,7 @@ and the derived files           etl.pdf
       \@@_replace_space:n
       \@@_replace_group:nn
       \@@_replace_final:nn
-      { {#2} {#2} {} {#3} \s_@@_mark }
+      { {#2} {#2} {} {#3} \@@_act_unexpanded_rest:w }
       {#1}
   }
 %    \end{macrocode}
