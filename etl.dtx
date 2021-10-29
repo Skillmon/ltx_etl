@@ -723,15 +723,14 @@ and the derived files           etl.pdf
 %    \end{macrocode}
 %   We also provide a version without the \cs{@@_unexpanded:w} around it for
 %   internal purposes, in which we'd otherwise have to remove it for correct
-%   behaviour.
+%   behaviour. For that we use \cs{use_ii_iii:nnn} which will remove one set
+%   of braces and the \cs{@@_unexpanded:w}.
 %    \begin{macrocode}
-\cs_new:Npn \@@_act:nnnnnnn #1#2#3#4#5#6#7
+\exp_args:NNno \exp_args:Nno \use:n
+  { \cs_new:Npn \@@_act:nnnnnnn #1#2#3#4#5#6#7 }
   {
-    \@@_expanded:w
-      {
-        \@@_act:w #7 {\s_@@_stop} . \s_@@_stop {#5} {#1} {#2} {#3}
-        \@@_act_result:n {#6} {#4}
-      }
+    \exp_after:wN \use_ii_iii:nnn
+    \etl_act:nnnnnnn {#1} {#2} {#3} {#4} {#5} {#6} {#7}
   }
 %    \end{macrocode}
 %   We also provide two reduced function variants, the first without presetting
@@ -1914,6 +1913,12 @@ and the derived files           etl.pdf
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
+%
+% \subsection{Undefine now unnecessary functions}
+%
+%    \begin{macrocode}
+\cs_undefine:N \@@_act:nnnnnnn
+%    \end{macrocode}
 %
 %    \begin{macrocode}
 %</pkg>
