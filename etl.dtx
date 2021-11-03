@@ -283,6 +283,93 @@ and the derived files           etl.pdf
 % \end{function}
 %
 %
+% \subsubsection{Examples}
+%
+% To give examples how you could use \cs{etl_act:nnnnnnn} the following could
+% be used to reimplement \cs{tl_reverse:n}. We work with a bit of currying here
+% (this gives a small speed gain in general, though for code clarity you might
+% decide to not curry each and every argument). Since a reversing function
+% doesn't need to postprocess its output we can use the shorter
+% \cs{etl_act:nnnnn}. The three internal functions all need to gobble the
+% status.
+%
+% \begin{verbatim}
+% % argument #2 is curried
+% \cs_new:Npn \__my_reverse_normal:nN #1 { \etl_act_output_pre:n }
+% \cs_new:Npn \__my_reverse_space:n #1 { \etl_act_output_pre:n { ~ } }
+% \cs_new:Npn \__my_reverse_group:nn #1#2 { \etl_act_output_pre:n { {#2} } }
+% % argument #1 is curried
+% \cs_new:Npn \my_reverse:n
+%   {
+%     \etl_act:nnnnn
+%       \__my_reverse_normal:nN
+%       \__my_reverse_space:n
+%       \__my_reverse_group:nn
+%       {} % empty status
+%   }
+% \end{verbatim}
+%
+% We could also create a similar function that'll reverse the input up to the
+% first space and discard the remainder (no idea why somebody would want to do
+% that).
+%
+% \begin{verbatim}
+% % argument #1 is curried
+% \cs_new:Npn \my_reverse_discard_after_space:n
+%   {
+%     \etl_act:nnnnn
+%       \__my_reverse_normal:nN
+%       \etl_act_break:
+%       \__my_reverse_group:nn
+%       {} % empty status
+%   }
+% \end{verbatim}
+%
+% Or a function that reverses the contents of groups as well.
+%
+% \begin{verbatim}
+% \cs_generate_variant:Nn \etl_act_output_pre:n { e }
+% \cs_new:Npn \__my_reverse_group_reversed:nn #1#2
+%   { \etl_act_output_pre:e { { \my_reverse_deep:n {#2} } } }
+% % argument #1 is curried
+% \cs_new:Npn \my_reverse_deep:n
+%   {
+%     \etl_act:nnnnn
+%       \__my_reverse_normal:nN
+%       \__my_reverse_space:n
+%       \__my_reverse_group_reversed:nn
+%       {} % empty status
+%   }
+% \end{verbatim}
+%
+% Another function could count a specific token inside a token list. Since for
+% this neither output-reordering nor post processing is needed we shortcut by
+% not using \cs{etl_output:n} but instead directly leaving |+ \c_one_int| (which
+% also doesn't need to be protected against further expansion) in the input.
+%
+% \begin{verbatim}
+% \cs_new:Npn \__my_count_token:NN #1#2
+%   { \etl_token_if_eq:NNT #1#2 { + \c_one_int } }
+% \cs_new:Npn \my_count_token:Nn #1#2
+%   {
+%     \int_eval:n
+%       {
+%         \c_zero_int
+%         \etl_act:nnnnn
+%           \__my_count_token:NN
+%           \use_none:n
+%           \use_none:nn
+%           {#1}
+%           {#2}
+%       }
+%   }
+% \end{verbatim}
+%
+% I hope this gave you at least an idea on how to use the loop and that the
+% explanations on the functions not used in these examples suffice to also give
+% you an idea on how to use them.
+%
+%
 % \subsection{Conditionals}\label{sec:conditionals}
 %
 % \begin{function}[pTF]{\etl_token_if_eq:NN}
