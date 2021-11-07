@@ -92,4 +92,32 @@
     \test_it:n { a~{b}Aa~{b} }
   }
 
+\OMIT
+\cs_set:Npn \test_space:n #1
+  {
+    \etl_act_apply_to_rest:n \etl_act_output_pre:n
+    \etl_act_put_back:n { S }
+  }
+\cs_set:Npn \test_group:nn #1#2 { \etl_act_output:n { {#2} } }
+\cs_set:Npn \test_group_in_place_rest:nn #1#2
+  {
+    \etl_act_apply_to_rest:n \etl_act_output:n
+    { \exp_not:n {#2} }
+  }
+\cs_set:Npn \test_normal:nN #1#2
+  {
+    \str_case:nnF #2
+      {
+        A { \etl_act_switch_group:n \test_group_in_place_rest:nn }
+      }
+      { \etl_act_output:n #2 }
+  }
+\TIMO
+
+\TESTEXP{act~ apply~ to~ rest}
+  {
+    \test_it:n { ab{cd}~rest }
+    \test_it:n { Ab{cd}~rest }
+  }
+
 \END
