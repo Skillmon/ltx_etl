@@ -1,7 +1,7 @@
 -- Build script for etl
 module     = "etl"
 pkgversion = "0.3"
-pkgdate    = "2021-10-29"
+pkgdate    = "2021-11-07"
 
 -- update package date and version
 tagfiles = {"etl.dtx", "README.md", "CTAN.md"}
