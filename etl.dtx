@@ -109,10 +109,11 @@ and the derived files           etl.pdf
 % The \pkg{etl} package provides a few \emph{slow but expandable} alternatives
 % to unexpandable functions found inside the \pkg{l3tl} module of \pkg{expl3}.
 % All user functions must not contain the tokens \cs{s__etl_stop}\footnote{At
-% any nesting level of groups} or \cs{__etl_act_result:n}\footnote{Outside of
-% some local brace groups} in any argument unless specified otherwise (there
-% might be other forbidden tokens, all of which are internals to this package,
-% and usually shouldn't somehow end up inside the input stream by accident).
+% any nesting level of groups} or \cs{__etl_act_result:n}\footnote{On the top
+% level (so nested usages in groups are fine)} in any argument unless specified
+% otherwise (there might be other forbidden tokens, all of which are internals
+% to this package, and usually shouldn't somehow end up inside the input stream
+% by accident).
 %
 % There is another limitation of this package: There are tokens which cannot
 % expandably be differentiated from each other, those are active characters let
@@ -195,7 +196,12 @@ and the derived files           etl.pdf
 %   After this macro was used all remaining things inside the \meta{token list}
 %   argument of \cs{etl_act:nnnnnnn} will be added to the output. The normal
 %   version will add it to the end of the output, the |pre| variant will put the
-%   remainder before the current output in reversed order.
+%   remainder before the current output in reversed order. Any begin group and
+%   end group tokens inside \meta{token list} will be normalised by this. A
+%   faster alternative (that doesn't normalise) would be
+% \begin{verbatim}
+% \etl_act_apply_to_rest:n \etl_act_break_post:n
+% \end{verbatim}
 %   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
 %   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
@@ -236,6 +242,19 @@ and the derived files           etl.pdf
 %   \meta{normal} (so |N|-type) tokens, \meta{space}s, and \meta{group}s.
 %   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
 %   code of \cs{etl_act:nnnnnnn}.
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_act_apply_to_rest:n}
+%   \begin{syntax}
+%     \cs{etl_act_apply_to_rest:n} \marg{code}
+%   \end{syntax}
+%   This will fetch the rest of the input \meta{token list} of the current
+%   \cs{etl_act:nnnnnnn} call and leave \meta{code}\marg{rest} in the input
+%   stream (without brace normalisation). It will not end the current
+%   \cs{etl_act:nnnnnnn} loop (but since the \meta{token list} remainder is now
+%   empty it'll end after your \meta{code} is done, except if you put new
+%   contents in the list using \cs{etl_act_put_back:n}) nor affect it in any
+%   other way.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_do_final:}
@@ -362,6 +381,32 @@ and the derived files           etl.pdf
 %           {#1}
 %           {#2}
 %       }
+%   }
+% \end{verbatim}
+%
+% As a last example we reimplement the \cs{etl_token_replace_once:nNn} function.
+% The function doesn't need to reorder any tokens, so we shortcut with
+% \cs{exp_not:n} to output things in place. We put the token we want to replace
+% in the code for |N|-type processing and the replacement in the status. When we
+% found the token we want to replace we put our replacement there and output the
+% rest unaltered.
+%
+% \begin{verbatim}
+% \cs_new:Npn \my_replace_token:nNn #1#2#3
+%   {
+%     \etl_act:nnnnn
+%       { \__my_replace_token:NnN #2 }
+%       { ~ \use_none:n }
+%       { \__my_replace_token_group:nn }
+%       {#3}
+%       {#1}
+%   }
+% \cs_new:Npn \__my_replace_token_group:nn #1#2 { { \exp_not:n {#2} } }
+% \cs_new:Npn \__my_replace_token:NnN #1#2#3
+%   {
+%     \etl_token_if_eq:NNTF #1#3
+%       { \exp_not:n {#2} \etl_act_apply_to_rest:n \etl_act_break:n }
+%       { \exp_not:N #3 }
 %   }
 % \end{verbatim}
 %
@@ -1080,6 +1125,7 @@ and the derived files           etl.pdf
   { #2 \s_@@_stop {#3} {#4} {#5} {#1} }
 %    \end{macrocode}
 % \end{macro}
+%
 % \begin{macro}[EXP]
 %   {
 %     \etl_act_do_final:,
@@ -1104,6 +1150,66 @@ and the derived files           etl.pdf
 \cs_new:Npn \etl_act_break_post:n #1 #2 \@@_act_result:n #3#4
   { \@@_unexpanded:w { #3 #1 } }
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\etl_act_apply_to_rest:n}
+%   This function can be used to get the remainder of the input \meta{token
+%   list} and apply some user code on it. To get past the user code we use
+%   \cs{@@_expanded:w} with a brace trick. The heavy lifting is done by
+%   \cs{@@_act_get_rest:w}. The \cs{prg_do_nothing:} prevents accidental brace
+%   stripping and will be removed by \cs{@@_act_get_rest:w}.
+%    \begin{macrocode}
+\cs_new:Npn \etl_act_apply_to_rest:n #1
+  {
+    \@@_expanded:w { \@@_unexpanded:w {#1} { \if_false: }} \fi:
+    \@@_act_get_rest:w \prg_do_nothing:
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[EXP]{\@@_act_get_rest:w}
+%   This macro should be used with two unbalanced opening braces before it and
+%   inside an \cs{@@_expanded:w} context with a \cs{prg_do_nothing:} following
+%   it to prevent accidental brace stripping. It'll expand to the remainder of
+%   the input \meta{token list} followed by a closing brace and leaves
+%   everything else untouched.
+% \begin{macro}[EXP]
+%   {\@@_act_get_rest_aux:nw, \@@_act_get_rest_aux:nn, \@@_act_get_rest_done:w}
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_get_rest:w #1 \@@_act:w #2#
+  {
+    \@@_unexpanded:w {#2}
+    \@@_act_get_rest_aux:nn {#1}
+  }
+\cs_new:Npn \@@_act_get_rest_aux:nw #1 #2#
+  {
+    \@@_unexpanded:w {#2}
+    \@@_act_get_rest_aux:nn {#1}
+  }
+%    \end{macrocode}
+%   Each group might be the end marker, so we check that, else leave the group
+%   there and grab until the next group starts.
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_get_rest_aux:nn #1#2
+  {
+    \@@_act_if_end:w #2 \@@_act_get_rest_done:w \s_@@_stop
+    { \@@_unexpanded:w {#2} }
+    \@@_act_get_rest_aux:nw {#1}
+  }
+%    \end{macrocode}
+%   This closes the two unbalanced opening braces (ending the \cs{@@_expanded:w}
+%   context) and puts the remaining code back in the input stream (as well as
+%   the now empty next \cs{@@_act:w} step). The \cs{exp_after:wN} removes the
+%   leading \cs{prg_do_nothing:}.
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_get_rest_done:w \s_@@_stop #1 \@@_act_get_rest_aux:nw #2
+  {
+    \if_false: {{ \fi: } \exp_after:wN }
+    #2
+    \@@_act:w { \s_@@_stop }
+  }
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 %
