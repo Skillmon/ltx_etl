@@ -164,9 +164,8 @@ and the derived files           etl.pdf
 %   expansion using \cs{exp_not:n}). Also you can specify some \meta{output}
 %   which should be there from the beginning.
 %
-%   Functions without the argument \meta{output} will start with an empty
-%   output, and those without \meta{final} will just output the results at the
-%   end.
+%   Variants without the argument \meta{output} will start with an empty output,
+%   and those without \meta{final} will just output the results at the end.
 %
 %   \begin{texnote}
 %     The result is returned within \cs{exp_not:n}, which means that the token
@@ -178,6 +177,9 @@ and the derived files           etl.pdf
 %   \end{texnote}
 % \end{function}
 %
+% All other functions which start in |\etl_act_| should only be used inside the
+% \meta{normal}, \meta{space}, or \meta{group} code of \cs{etl_act:nnnnnnn}.
+%
 % \begin{function}[EXP]{\etl_act_output:n, \etl_act_output_pre:n}
 %   \begin{syntax}
 %     \cs{etl_act_output:n} \Arg{token list}
@@ -185,8 +187,6 @@ and the derived files           etl.pdf
 %   This will add \meta{token list} to the output of \cs{etl_act:nnnnnnn}. The
 %   normal version will add \meta{token list} after the current output, the
 %   |pre| variant will put it before the current output.
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_output_rest:, \etl_act_output_rest_pre:}
@@ -200,10 +200,8 @@ and the derived files           etl.pdf
 %   end group tokens inside \meta{token list} will be normalised by this. A
 %   faster alternative (that doesn't normalise) would be
 % \begin{verbatim}
-% \etl_act_apply_to_rest:n \etl_act_break_post:n
+% \etl_act_apply_to_rest:n { \etl_act_break_post:n }
 % \end{verbatim}
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_status:n}
@@ -212,8 +210,6 @@ and the derived files           etl.pdf
 %   \end{syntax}
 %   This will change the current status of \cs{etl_act:nnnnnnn} to
 %   \meta{status}.
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_put_back:n}
@@ -223,8 +219,6 @@ and the derived files           etl.pdf
 %   You can put \meta{token list} back into the input stream to be reconsidered
 %   by the current \cs{etl_act:nnnnnnn} loop (of course this doesn't have to be
 %   literally put back, you might add completely new contents with this).
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]
@@ -240,16 +234,14 @@ and the derived files           etl.pdf
 %   \end{syntax}
 %   With these functions you can change the provided code to act on
 %   \meta{normal} (so |N|-type) tokens, \meta{space}s, and \meta{group}s.
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_apply_to_rest:n}
 %   \begin{syntax}
-%     \cs{etl_act_apply_to_rest:n} \marg{code}
+%     \cs{etl_act_apply_to_rest:n} \Arg{code}
 %   \end{syntax}
 %   This will fetch the rest of the input \meta{token list} of the current
-%   \cs{etl_act:nnnnnnn} call and leave \meta{code}\marg{rest} in the input
+%   \cs{etl_act:nnnnnnn} call and leave \meta{code}\Arg{rest} in the input
 %   stream (without brace normalisation). It will not end the current
 %   \cs{etl_act:nnnnnnn} loop (but since the \meta{token list} remainder is now
 %   empty it'll end after your \meta{code} is done, except if you put new
@@ -266,8 +258,6 @@ and the derived files           etl.pdf
 %   \meta{final} code was used, the output). The \meta{final} code will receive
 %   the current status followed by the current output as two arguments (just
 %   like it would when the end of the \meta{token list} was reached).
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_break:, \etl_act_break_discard:}
@@ -277,8 +267,6 @@ and the derived files           etl.pdf
 %   This will immediately stop the current \cs{etl_act:nnnnnnn} invocation and
 %   leave the current output in the input stream. The |discard| variant will
 %   gobble the current output and leave nothing in the input stream.
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_break:n}
@@ -287,8 +275,6 @@ and the derived files           etl.pdf
 %   \end{syntax}
 %   This will immediately stop the current \cs{etl_act:nnnnnnn} invocation,
 %   gobble the current output and leave \meta{token list} in the input stream.
-%   Might be used inside of the \meta{normal}, \meta{space}, or \meta{group}
-%   code of \cs{etl_act:nnnnnnn}.
 % \end{function}
 %
 % \begin{function}[EXP]{\etl_act_break_pre:n, \etl_act_break_post:n}
@@ -397,15 +383,15 @@ and the derived files           etl.pdf
 %     \etl_act:nnnnn
 %       { \__my_replace_token:NnN #2 }
 %       { ~ \use_none:n }
-%       { \__my_replace_token_group:nn }
+%       { \__my_replace_token:nn }
 %       {#3}
 %       {#1}
 %   }
-% \cs_new:Npn \__my_replace_token_group:nn #1#2 { { \exp_not:n {#2} } }
+% \cs_new:Npn \__my_replace_token:nn #1#2 { { \exp_not:n {#2} } }
 % \cs_new:Npn \__my_replace_token:NnN #1#2#3
 %   {
 %     \etl_token_if_eq:NNTF #1#3
-%       { \exp_not:n {#2} \etl_act_apply_to_rest:n \etl_act_break:n }
+%       { \exp_not:n {#2} \etl_act_apply_to_rest:n { \etl_act_break:n } }
 %       { \exp_not:N #3 }
 %   }
 % \end{verbatim}
@@ -428,18 +414,6 @@ and the derived files           etl.pdf
 %   \cs{str_if_eq:nnTF} is true).
 % \end{function}
 %
-% \begin{function}[pTF]{\etl_if_eq:nn}
-%   \begin{syntax}
-%     \cs{etl_if_eq_p:nn} \Arg{token list_1} \Arg{token list_2}
-%     \cs{etl_if_eq:nnTF} \Arg{token list_1} \Arg{token list_2} \Arg{true code} \Arg{false code}
-%   \end{syntax}
-%   Compares \meta{token list_1} and \meta{token list_2} with each other on a
-%   token-by-token basis. Keep in mind that there are tokens which can't be told
-%   apart from each other, and that groups are normalised. If both token lists
-%   match (modulo the mentioned limitations) the \meta{true code} is left in the
-%   input stream, else the \meta{false code}.
-% \end{function}
-%
 % \begin{function}[pTF]{\etl_token_if_in:nN}
 %   \begin{syntax}
 %     \cs{etl_token_if_in_p:nN} \Arg{token list} \meta{token}
@@ -459,6 +433,18 @@ and the derived files           etl.pdf
 %   searched as well.
 % \end{function}
 %
+% \begin{function}[pTF]{\etl_if_eq:nn}
+%   \begin{syntax}
+%     \cs{etl_if_eq_p:nn} \Arg{token list_1} \Arg{token list_2}
+%     \cs{etl_if_eq:nnTF} \Arg{token list_1} \Arg{token list_2} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Compares \meta{token list_1} and \meta{token list_2} with each other on a
+%   token-by-token basis. Keep in mind that there are tokens which can't be told
+%   apart from each other, and that groups are normalised. If both token lists
+%   match (modulo the mentioned limitations) the \meta{true code} is left in the
+%   input stream, else the \meta{false code}.
+% \end{function}
+%
 % \begin{function}[pTF]{\etl_if_in:nn}
 %   \begin{syntax}
 %     \cs{etl_if_in_p:nn} \Arg{token list} \Arg{search text}
@@ -469,9 +455,8 @@ and the derived files           etl.pdf
 %   code}. Both macro parameter tokens as well as tokens with category code~1
 %   and 2 (normally |{}|) can be part of \meta{search text} (unlike for the
 %   similar function \cs{tl_if_in:nnTF}). Material inside of groups in
-%   \meta{token list} is ignored (except for the groups contained in
-%   \meta{search text}). So the following would first yield |true| and then
-%   |false|:
+%   \meta{token list} is ignored (except for groups contained in \meta{search
+%   text}). So the following would first yield |true| and then |false|:
 % \end{function}
 % \begin{verbatim}
 % \etl_if_in:nnTF { a{b{c}} } { {b{c}} } { true } { false }
