@@ -58,7 +58,7 @@ and the derived files           etl.pdf
 \PassOptionsToPackage{full}{textcomp}
 \documentclass{l3doc}
 \RequirePackage[oldstylenums,nott]{kpfonts}
-\RequirePackage{randtext,xcolor}
+\RequirePackage{randtext,xcolor,array}
 \input{glyphtounicode}
 \usepackage{xistercian}
 \pdfgentounicode=1
@@ -150,22 +150,59 @@ and the derived files           etl.pdf
 %     \cs{etl_act:nnnnnn}  \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{token list}
 %     \cs{etl_act:nnnnn}   \Arg{normal} \Arg{space} \Arg{group} \Arg{status} \Arg{token list}
 %   \end{syntax}
-%   This function will act on the \meta{token list} (somewhat a
-%   |map_tokens|-function).  Both \meta{normal} and \meta{group} should be code
-%   that expects two following arguments (the first being the \meta{status}, the
-%   second the next |N|-type token or the contents of the next group in the
-%   \meta{token list}), and \meta{space} should expect only the \meta{status} as
-%   a following argument.
+%   This function will loop over the contents of \meta{token list} on a token by
+%   token basis (somewhat like a |map_tokens|-function of \pkg{expl3}). For each
+%   |N|-type token it finds it'll call the code in \meta{normal} with the
+%   \meta{status} and the found |N|-type token trailing it as two arguments. For
+%   each space found \meta{space} will be called with only the \meta{status}
+%   following as an argument. And for each braced group found the code in
+%   \meta{group} will receive the status and the group as two arguments. Those
+%   functions will be called in the order each type of content is found in
+%   \meta{token list}. So an input like
 %
-%   You can also specify \meta{final} code which will receive the \meta{status}
-%   followed by the output (which you can assign with \cs{etl_act_output:n} and
-%   \cs{etl_act_output_pre:n}), and will be used inside an |e|-expansion context
-%   (so you'll want to protect anything you want to output from further
-%   expansion using \cs{exp_not:n}). Also you can specify some \meta{output}
-%   which should be there from the beginning.
+%   \smallskip
+%   \begin{tabular}{@{}>{\ttfamily}l@{}}
+%     \cs[no-index]{etl_act:nnnnn}
+%       \Arg{normal} \Arg{space} \Arg{group} \Arg{status} \verb*|{a b{def}c}|
+%   \end{tabular}
+%   \smallskip
 %
-%   Variants without the argument \meta{output} will start with an empty output,
-%   and those without \meta{final} will just output the results at the end.
+%   \noindent
+%   will be translated to something like
+%
+%   \smallskip
+%   \begingroup
+%   \ttfamily
+%   \begin{tabular}{@{}*2{l@{~}}l@{}}
+%     \meta{normal} & \Arg{status} & a       \\
+%     \meta{space}  & \Arg{status}           \\
+%     \meta{normal} & \Arg{status} & b       \\
+%     \meta{group}  & \Arg{status} & \{def\} \\
+%     \meta{normal} & \Arg{status} & c       \\
+%   \end{tabular}
+%   \endgroup
+%   \smallskip
+%
+%   \noindent
+%   Of course this is an oversimplification that only illustrates the order of
+%   processing. In practice there'll be a bunch of internal steps between each
+%   call of the user provided code and the input stream will never look like the
+%   above.
+%
+%   Inside of \meta{normal}, \meta{space}, and \meta{group} you can use
+%   \cs{etl_act_output:n} and \cs{etl_act_output_pre:n} to add things to the
+%   output. This output might be pre-filled with the contents in the
+%   \meta{output} argument (variants without this argument simply start with an
+%   empty output).
+%
+%   Once the complete \meta{token list} was looped over the \meta{final} code
+%   will receive the \meta{status} and the output as two arguments. You can then
+%   do another operation on the output. When you're done with that leave the
+%   final output inside \cs{exp_not:n}. Variants without the \meta{final}
+%   argument will just \enquote{return} the output.
+%
+%   All user code (so \meta{normal}, \meta{space}, \meta{group}, and
+%   \meta{final}) is run inside an |e|-expansion context.
 %
 %   \begin{texnote}
 %     The result is returned within \cs{exp_not:n}, which means that the token
