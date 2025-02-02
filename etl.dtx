@@ -146,7 +146,8 @@ and the derived files           etl.pdf
 %
 % \begin{function}[EXP]{\etl_act:nnnnnnn, \etl_act:nnnnnn, \etl_act:nnnnn}
 %   \begin{syntax}
-%     \cs{etl_act:nnnnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{output} \Arg{token list}
+%     \cs{etl_act:nnnnnnn} \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{output}
+%       \quad \Arg{token list}
 %     \cs{etl_act:nnnnnn}  \Arg{normal} \Arg{space} \Arg{group} \Arg{final} \Arg{status} \Arg{token list}
 %     \cs{etl_act:nnnnn}   \Arg{normal} \Arg{space} \Arg{group} \Arg{status} \Arg{token list}
 %   \end{syntax}
@@ -608,6 +609,54 @@ and the derived files           etl.pdf
 %   \end{texnote}
 % \end{function}
 %
+% \begin{function}[EXP]{\etl_token_split:nN}
+%   \begin{syntax}
+%     \cs{etl_token_split:nN} \Arg{token list} \meta{token}
+%   \end{syntax}
+%   This function splits a \meta{token list} at each occurrence of \meta{token}
+%   outside of any braces, each element will be left in a braced group. Spaces
+%   on either end of each element will be removed. Empty elements are not
+%   ignored.
+%   For instance
+%   \begin{quote}
+%     \verb|\etl_token_split:nN { ~a~b~ ; c~\empty ; d~ ; } ;|
+%   \end{quote}
+%   will result in
+%   \begin{quote}
+%     \verb*|{a b}{c \empty}{d}{}|
+%   \end{quote}
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion.
+%   \end{texnote}
+% \end{function}
+%
+% \begin{function}[EXP]{\etl_token_split_keep_spaces:nN}
+%   \begin{syntax}
+%     \cs{etl_token_split_keep_spaces:nN} \Arg{token list} \meta{token}
+%   \end{syntax}
+%   This function is like \cs{etl_token_split:nN} but it will not trim spaces
+%   around each element.
+%   For instance
+%   \begin{quote}
+%     \verb|\etl_token_split_keep_spaces:nN { ~a~b~ ; c~\empty ; d~ ; } ;|
+%   \end{quote}
+%   will result in
+%   \begin{quote}
+%     \verb*|{ a b }{c \empty}{d }{}|
+%   \end{quote}
+%
+%   \begin{texnote}
+%     The result is returned within \cs{exp_not:n}, which means that the token
+%     list does not expand further when appearing in an \hbox{|x|- or} |e|-type
+%     argument expansion. The result will be returned after exactly two steps of
+%     expansion.
+%   \end{texnote}
+% \end{function}
+%
 %
 % \subsection{New expandable functions}
 %
@@ -760,6 +809,12 @@ and the derived files           etl.pdf
 %
 % \subsection{Small auxiliaries}
 %
+% We want to expand the first token of a definition in quite a few occasions, so
+% let's provide a variant for that.
+%    \begin{macrocode}
+\cs_generate_variant:Nn \cs_new:Npn { Npo }
+%    \end{macrocode}
+%
 % \begin{macro}[EXP]{\@@_split_first:w}
 %   Can be used to extract the first element from a token list, it should always
 %   be used like this:
@@ -850,7 +905,7 @@ and the derived files           etl.pdf
 % \subsection{The \texttt{act} loop} 
 %
 % \begin{macro}[EXP]{\etl_act:nnnnnnn,\etl_act:nnnnnn,\etl_act:nnnnn}
-% \begin{macro}[EXP]{\@@_act:nnnnnnn}
+% \begin{macro}[EXP]{\@@_act:nnnnnnn,\@@_act_braced:nnnnnnn}
 % \begin{macro}[EXP]{\@@_act_just_result:nn}
 %   The act loop is modelled after the \pkg{expl3} internal \cs{__tl_act:NNNn}
 %   but with a few more features making it more general. Those are (argument
@@ -885,6 +940,18 @@ and the derived files           etl.pdf
   {
     \exp_after:wN \use_ii_iii:nnn
     \etl_act:nnnnnnn {#1} {#2} {#3} {#4} {#5} {#6} {#7}
+  }
+%    \end{macrocode}
+%   Another version that has a set of additional braces used for the split
+%   macros.
+%    \begin{macrocode}
+\cs_new:Npn \@@_act_braced:nnnnnnn #1#2#3#4#5#6#7
+  {
+    \@@_unexpanded:w \@@_expanded:w
+      {{{
+        \@@_act:w #7 {\s_@@_stop} . \s_@@_stop {#5} {#1} {#2} {#3}
+        \@@_act_result:n {#6} {#4}
+      }}}
   }
 %    \end{macrocode}
 %   We also provide two reduced function variants, the first without presetting
@@ -1924,6 +1991,135 @@ and the derived files           etl.pdf
       {#1}
   }
 %    \end{macrocode}
+% \end{macro}
+%
+%
+% \begin{macro}[EXP]{\etl_token_split:nN}
+% \begin{macro}[EXP]
+%   {
+%     \@@_token_split_switch_keep_spaces:N,
+%     \@@_token_split_switch_ignore_spaces:N
+%   }
+% \begin{macro}[EXP]{\@@_token_split_first:NnN, \@@_token_split:NnN}
+% \begin{macro}[EXP]{\@@_token_split_space:n}
+%   The basic idea of \cs{etl_token_split:nN} is to put braces around each
+%   item using brace hacks. Since we also want to trim spaces we don't output
+%   spaces directly but instead keep every encountered space in the status, then
+%   when we find a group we output the status flushing all the spaces. On an
+%   |N|-type we first compare the tokens, if they match we gobble the status and
+%   output an inverse pair of unbalanced braces, otherwise we flush the spaces
+%   and the found |N|-type. This way all trailing spaces are trimmed without the
+%   need for \cs[no-index]{tl_trim_spaces:n} or the like.
+%    \begin{macrocode}
+\cs_new:Npo \etl_token_split:nN #1#2
+  {
+    \@@_act_braced:nnnnnnn
+      { \@@_token_split_first:NnN #2 }
+      \use_none:n
+      {
+        \@@_token_split_switch_keep_spaces:N #2
+        \@@_act_unexpanded_group:nn
+      }
+      \use_none:nn
+      {}
+      {}
+      {#1}
+  }
+%    \end{macrocode}
+%   There are two different states of the list splitter, either we haven't yet
+%   encountered a group or |N|-type for the current element (we're ignoring
+%   spaces) or we have and put spaces into the status. The code looks cleaner if
+%   we store these two states in macros doing the necessary
+%   \cs{etl_act_switch:nnn} calls.
+%    \begin{macrocode}
+\cs_new:Npn \@@_token_split_switch_ignore_spaces:N #1
+  {
+    \etl_act_switch:nnn
+      { \@@_token_split_first:NnN #1 }
+      \use_none:n
+      {
+        \@@_token_split_switch_keep_spaces:N #1
+        \@@_act_unexpanded_group:nn
+      }
+  }
+\cs_new:Npn \@@_token_split_switch_keep_spaces:N #1
+  {
+    \etl_act_switch:nnn
+      { \@@_token_split:NnN #1 }
+      \@@_token_split_space:n
+      { \use_ii_i:nn { \etl_act_status:n {} \@@_act_unexpanded_group:nn {} } }
+  }
+%    \end{macrocode}
+%   In case we're ignoring spaces and we have a hit we just output the brace
+%   hacks and are done, otherwise output the encountered |N|-type and switch to
+%   keeping spaces. When we're currently keeping spaces we need to switch back
+%   to ignoring them if we had a hit, in any case we need to clear the status to
+%   remove the processed spaces (either they were dropped because we're at the
+%   end of the current item or they were output).
+%    \begin{macrocode}
+\cs_new:Npo \@@_token_split_first:NnN #1#2#3
+  {
+    \etl_token_if_eq:NNTF {#1} {#3}
+      { \if_false: { \fi: } { \if_false: } \fi: }
+      {
+        \@@_unexpanded:w {#3}
+        \@@_token_split_switch_keep_spaces:N #1
+      }
+  }
+\cs_new:Npo \@@_token_split:NnN #1#2#3
+  {
+    \etl_token_if_eq:NNTF {#1} {#3}
+      {
+        \if_false: { \fi: } { \if_false: } \fi:
+        \@@_token_split_switch_ignore_spaces:N #1
+      }
+      {
+        #2
+        \@@_unexpanded:w {#3}
+      }
+    \etl_act_status:n {}
+  }
+%    \end{macrocode}
+%   Whenever we encounter a space and intend to keep them we put it in the
+%   status, and we need to keep the current contents of the status in case we
+%   deal with consecutive spaces).
+%    \begin{macrocode}
+\cs_new:Npn \@@_token_split_space:n #1 { \etl_act_status:n { #1 ~ } }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+%
+% \begin{macro}[EXP]{\etl_token_split_keep_spaces:nN}
+% \begin{macro}[EXP]{\@@_token_split_keep_spaces:NnN}
+%   The variant keeping spaces is absolutely straight forward if one understands
+%   the space trimming variant. Simply output spaces and groups directly, and in
+%   the |N|-type output the inverse pair of unbalanced braces on a hit and
+%   otherwise the token directly. No state juggling, no status space-stack.
+%    \begin{macrocode}
+\cs_new:Npo \etl_token_split_keep_spaces:nN #1#2
+  {
+    \@@_act_braced:nnnnnnn
+      { \@@_token_split_keep_spaces:NnN #2 }
+      \@@_act_unexpanded_space:n
+      \@@_act_unexpanded_group:nn
+      \use_none:nn
+      {}
+      {}
+      {#1}
+  }
+%    \end{macrocode}
+%    \begin{macrocode}
+\cs_new:Npo \@@_token_split_keep_spaces:NnN #1#2#3
+  {
+    \etl_token_if_eq:NNTF {#1} {#3}
+      { \if_false: { \fi: } { \if_false: } \fi: }
+      { \@@_unexpanded:w {#3} }
+  }
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 %
