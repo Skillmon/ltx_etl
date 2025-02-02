@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 # etl -- expandable token list operations
 
-Version 2021-11-07 v0.3
+Version 2025-02-02 v0.4
 
 Released under the LaTeX Project Public License v1.3c or later
 See http://www.latex-project.org/lppl.txt
@@ -10,7 +10,7 @@ Hosted at https://github.com/Skillmon/ltx_etl
 
 -------------------------------------------------------------------------------
 
-Copyright (C) 2021-2022 Jonathan P. Spratte
+Copyright (C) 2021-2025 Jonathan P. Spratte
 
 This  work may be  distributed and/or  modified under  the conditions  of the
 LaTeX Project Public License (LPPL),  either version 1.3c  of this license or
