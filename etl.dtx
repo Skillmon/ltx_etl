@@ -935,8 +935,8 @@ and the derived files           etl.pdf
 %   behaviour. For that we use \cs{use_ii_iii:nnn} which will remove one set
 %   of braces and the \cs{@@_unexpanded:w}.
 %    \begin{macrocode}
-\exp_args:NNno \exp_args:Nno \use:n
-  { \cs_new:Npn \@@_act:nnnnnnn #1#2#3#4#5#6#7 }
+\exp_args:Nno \use:n
+  { \cs_new:Npo \@@_act:nnnnnnn #1#2#3#4#5#6#7 }
   {
     \exp_after:wN \use_ii_iii:nnn
     \etl_act:nnnnnnn {#1} {#2} {#3} {#4} {#5} {#6} {#7}
@@ -957,9 +957,9 @@ and the derived files           etl.pdf
 %   We also provide two reduced function variants, the first without presetting
 %   some output, the second also without the final processor.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_act:nnnnnn #1#2#3#4#5#6 }
+\cs_new:Npo \etl_act:nnnnnn #1#2#3#4#5#6
   { \etl_act:nnnnnnn {#1} {#2} {#3} {#4} {#5} {} {#6} }
-\exp_args:Nno \use:n { \cs_new:Npn \etl_act:nnnnn #1#2#3#4#5 }
+\cs_new:Npo \etl_act:nnnnn #1#2#3#4#5
   { \etl_act:nnnnnnn {#1} {#2} {#3} \@@_act_just_result:nn {#4} {} {#5} }
 %    \end{macrocode}
 %   The final processor is provided with two |n|-type arguments (both in braces)
@@ -1317,7 +1317,7 @@ and the derived files           etl.pdf
 %   are necessary because of the first step of expansion applied to that
 %   function.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_token_if_eq:NNTF #1#2 }
+\cs_new:Npo \etl_token_if_eq:NNTF #1#2
   {
     \token_if_eq_meaning:NNT {#1} {#2} { \str_if_eq:nnT #1#2 \use_ii:nnn }
     \use_ii:nn
@@ -1355,7 +1355,7 @@ and the derived files           etl.pdf
       \prg_return_false:
     \fi:
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_token_if_in:NN #1#2 }
+\cs_new:Npo \@@_token_if_in:NN #1#2
   {
     \etl_token_if_eq:NNTF {#1} {#2} { \etl_act_break:n \if_true: } {}
   }
@@ -1382,7 +1382,7 @@ and the derived files           etl.pdf
       \prg_return_false:
     \fi:
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_token_if_in_deep:Nn #1#2 }
+\cs_new:Npo \@@_token_if_in_deep:Nn #1#2
   { \etl_token_if_in_deep:nNT {#2} {#1} { \etl_act_break:n \if_true: } }
 %    \end{macrocode}
 % \end{macro}
@@ -1422,7 +1422,7 @@ and the derived files           etl.pdf
 %   If they are equal we store the rest of the second token list in the status
 %   and go on with the loop, else we break out and return false.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_normal:nN #1#2 }
+\cs_new:Npo \@@_if_eq_normal:nN #1#2
   {
     \@@_if_empty:nT {#1} { \etl_act_break:n \if_false: }
     \@@_if_head_is_N_type:nTF {#1}
@@ -1433,7 +1433,7 @@ and the derived files           etl.pdf
       }
       { \etl_act_break:n \if_false: }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_normal:NnN #1#2#3 }
+\cs_new:Npo \@@_if_eq_normal:NnN #1#2#3
   {
     \etl_token_if_eq:NNTF {#1} {#3}
       { \etl_act_status:n {#2} }
@@ -1443,7 +1443,7 @@ and the derived files           etl.pdf
 %   Spaces are pretty similar, but easier, we don't need to split of the first
 %   token in a complicated manner, instead we just gobble a leading space.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_space:n #1 }
+\cs_new:Npo \@@_if_eq_space:n #1
   {
     \@@_if_head_is_space:nTF {#1}
       { \exp_after:wN \etl_act_status:n \exp_after:wN { \@@_rm_space:w #1 } }
@@ -1453,7 +1453,7 @@ and the derived files           etl.pdf
 %   Groups are similarly handled to normal arguments, but instead of comparing
 %   only two tokens we have to compare by recursion.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_group:nn #1 }
+\cs_new:Npo \@@_if_eq_group:nn #1
   {
     \@@_if_head_is_group:nTF {#1}
       {
@@ -1462,7 +1462,7 @@ and the derived files           etl.pdf
       }
       { \etl_act_break:n \if_false: }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_group:nnn #1#2#3 }
+\cs_new:Npo \@@_if_eq_group:nnn #1#2#3
   {
     \etl_if_eq:nnTF {#1} {#3}
       { \etl_act_status:n {#2} }
@@ -1474,7 +1474,7 @@ and the derived files           etl.pdf
 %   the case the two are equal, else not. We need to leave either true or false
 %   (protected against the \cs{@@_expanded:w} expansion) in the input.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_eq_final:nn #1#2 }
+\cs_new:Npo \@@_if_eq_final:nn #1#2
   {
     \exp_after:wN
     \@@_unexpanded:w
@@ -1500,7 +1500,7 @@ and the derived files           etl.pdf
 %   \cs{@@_if_in_put_back:n} which will remove the first token (we need to
 %   watch out for spaces) and puts the rest back using \cs{etl_act_put_back:n}.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_put_back:n #1 }
+\cs_new:Npo \@@_if_in_put_back:n #1
   {
     \@@_if_head_is_space:nTF {#1}
       { \exp_after:wN \etl_act_put_back:n \exp_after:wN { \@@_rm_space:w #1 } }
@@ -1542,7 +1542,7 @@ and the derived files           etl.pdf
 %   and \cs{@@_if_in_space:n} needs to trim off a leading space.
 %    \begin{macrocode}
 \cs_new:Npn \@@_if_in_normal:nN #1 { \@@_if_in_normal:nnnN #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_normal:nnnN #1#2#3#4 }
+\cs_new:Npo \@@_if_in_normal:nnnN #1#2#3#4
   {
     \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
     \@@_if_head_is_N_type:nTF {#1}
@@ -1555,7 +1555,7 @@ and the derived files           etl.pdf
         \@@_if_in_put_back:n { #3 #4 }
       }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_normal:NnnnN #1#2#3#4#5 }
+\cs_new:Npo \@@_if_in_normal:NnnnN #1#2#3#4#5
   {
     \etl_token_if_eq:NNTF {#1} {#5}
       { \etl_act_status:n { {#2} {#3} {#4#5} } }
@@ -1565,7 +1565,7 @@ and the derived files           etl.pdf
       }
   }
 \cs_new:Npn \@@_if_in_space:n #1 { \@@_if_in_space:nnn #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_space:nnn #1#2#3 }
+\cs_new:Npo \@@_if_in_space:nnn #1#2#3
   {
     \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
     \@@_if_head_is_space:nTF {#1}
@@ -1579,7 +1579,7 @@ and the derived files           etl.pdf
       }
   }
 \cs_new:Npn \@@_if_in_group:nn #1 { \@@_if_in_group:nnnn #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group:nnnn #1 }
+\cs_new:Npo \@@_if_in_group:nnnn #1
   {
     \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
     \@@_if_head_is_group:nTF {#1}
@@ -1589,7 +1589,7 @@ and the derived files           etl.pdf
       }
       { \@@_if_in_group_false:nnn }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group:nnnnn #1#2#3#4#5 }
+\cs_new:Npo \@@_if_in_group:nnnnn #1#2#3#4#5
   {
     \etl_if_eq:nnTF {#1} {#5}
       { \etl_act_status:n { {#2} {#3} { #4 {#5} } } }
@@ -1598,7 +1598,7 @@ and the derived files           etl.pdf
         \etl_act_status:n { {#3} {#3} {} }
       }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_false:nnn #1#2#3 }
+\cs_new:Npo \@@_if_in_group_false:nnn #1#2#3
   {
     \@@_if_in_put_back:n { #2 {#3} }
     \etl_act_status:n { {#1} {#1} {} }
@@ -1635,7 +1635,7 @@ and the derived files           etl.pdf
     \fi:
   }
 \cs_new:Npn \@@_if_in_group_deep:nn #1 { \@@_if_in_group_deep:nnnn #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_deep:nnnn #1 }
+\cs_new:Npo \@@_if_in_group_deep:nnnn #1
   {
     \@@_if_empty:nT {#1} { \etl_act_break:n \if_true: }
     \@@_if_head_is_group:nTF {#1}
@@ -1645,7 +1645,7 @@ and the derived files           etl.pdf
       }
       { \@@_if_in_group_deep_false:nnn }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_deep:nnnnn #1#2#3#4#5 }
+\cs_new:Npo \@@_if_in_group_deep:nnnnn #1#2#3#4#5
   {
     \etl_if_eq:nnTF {#1} {#5}
       { \etl_act_status:n { {#2} {#3} { #4 {#5} } } }
@@ -1655,7 +1655,7 @@ and the derived files           etl.pdf
         \etl_act_status:n { {#3} {#3} {} }
       }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_if_in_group_deep_false:nnn #1#2#3 }
+\cs_new:Npo \@@_if_in_group_deep_false:nnn #1#2#3
   {
     \etl_if_in_deep:nnT {#3} {#1} { \etl_act_break:n \if_true: }
     \@@_if_in_put_back:n { #2 {#3} }
@@ -1677,7 +1677,7 @@ and the derived files           etl.pdf
 %   additional argument which will be executed once a replacement was done
 %   (this is used for the \cs{etl_token_replace_once:nNn} function).
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_all:nNn #1#2#3 }
+\cs_new:Npo \etl_token_replace_all:nNn #1#2#3
   {
     \etl_act:nnnnnn
       { \@@_token_replace:NnnN #2 {} }
@@ -1687,7 +1687,7 @@ and the derived files           etl.pdf
       {#3}
       {#1}
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_token_replace:NnnN #1#2#3#4 }
+\cs_new:Npo \@@_token_replace:NnnN #1#2#3#4
   {
     \etl_token_if_eq:NNTF {#1} {#4}
       { \@@_unexpanded:w {#3} #2 }
@@ -1702,7 +1702,7 @@ and the derived files           etl.pdf
 %   Deep replacement is done by recursion. Since the deep variant will not
 %   execute any additional code we omit such an additional argument for it.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_all_deep:nNn #1#2#3 }
+\cs_new:Npo \etl_token_replace_all_deep:nNn #1#2#3
   {
     \etl_act:nnnnnn
       { \@@_token_replace:NnnN #2 {} }
@@ -1716,7 +1716,7 @@ and the derived files           etl.pdf
 %   Here |{#1}| is used to get correct results from the first step of expansion
 %   done directly.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_token_replace_deep:Nnn #1#2#3 }
+\cs_new:Npo \@@_token_replace_deep:Nnn #1#2#3
   { \exp_after:wN { \etl_token_replace_all_deep:nNn {#3} {#1} {#2} } }
 %    \end{macrocode}
 % \end{macro}
@@ -1726,7 +1726,7 @@ and the derived files           etl.pdf
 %   To only handle the first matching token we just let the replacement internal
 %   exchange the function to directly output any token.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_token_replace_once:nNn #1#2#3 }
+\cs_new:Npo \etl_token_replace_once:nNn #1#2#3
   {
     \etl_act:nnnnnn
       { \@@_token_replace:NnnN #2 \@@_act_unexpanded_rest:w }
@@ -1768,7 +1768,7 @@ and the derived files           etl.pdf
 %   us whether we want to only replace the first match (if so use
 %   \cs{@@_act_unexpanded_rest:w}, else \cs{prg_do_nothing:}).
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_replace_all:nnn #1#2#3 }
+\cs_new:Npo \etl_replace_all:nnn #1#2#3
   {
     \etl_act:nnnnnn
       \@@_replace_normal:nN
@@ -1783,7 +1783,7 @@ and the derived files           etl.pdf
 %   need to know whether the first token is an |N|-type or group, because we
 %   can't just gobble the first element but need to output it unchanged.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_put_back:nnnN #1#2#3#4 }
+\cs_new:Npo \@@_replace_put_back:nnnN #1#2#3#4
   {
     \@@_if_head_is_space:nTF {#1}
       {
@@ -1808,7 +1808,7 @@ and the derived files           etl.pdf
     \etl_act_put_back:n
   }
 \cs_new:Npn \@@_replace_normal:nN #1 { \@@_replace_normal:nnnnNN #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_normal:nnnnNN #1 }
+\cs_new:Npo \@@_replace_normal:nnnnNN #1
   {
     \@@_if_head_is_N_type:nTF {#1}
       {
@@ -1843,7 +1843,7 @@ and the derived files           etl.pdf
 \use:n { \cs_new:Npn \@@_replace_normal_false:nnnNN #1#2#3#4#5 }
   { \@@_replace_put_back:nnnN { #2 #5 } {#1} {#3} {#4} }
 \cs_new:Npn \@@_replace_space:n #1 { \@@_replace_space:nnnnN #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_space:nnnnN #1 }
+\cs_new:Npo \@@_replace_space:nnnnN #1
   {
     \@@_if_head_is_space:nTF {#1}
       {
@@ -1857,7 +1857,7 @@ and the derived files           etl.pdf
 %   pattern, |#3| the delayed tokens, |#4| the replacement text, |#5| the marker
 %   for the |once| function.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_space_aux:nnnnN #1#2#3#4#5 }
+\cs_new:Npo \@@_replace_space_aux:nnnnN #1#2#3#4#5
   {
     \@@_if_empty:nTF {#1}
       {
@@ -1867,10 +1867,10 @@ and the derived files           etl.pdf
       }
       { \etl_act_status:n { {#1} {#2} { #3 ~ } {#4} #5 } }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_space_false:nnnN #1#2#3#4 }
+\cs_new:Npo \@@_replace_space_false:nnnN #1#2#3#4
   { \@@_replace_put_back:nnnN { #2 ~ } {#1} {#3} {#4} }
 \cs_new:Npn \@@_replace_group:nn #1 { \@@_replace_group:nnnnNn #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group:nnnnNn #1 }
+\cs_new:Npo \@@_replace_group:nnnnNn #1
   {
     \@@_if_head_is_group:nTF {#1}
       {
@@ -1885,7 +1885,7 @@ and the derived files           etl.pdf
 %   text, |#6| the marker for the |once| function, |#7| the next group in the
 %   input.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group:nnnnnNn #1#2#3#4#5#6#7 }
+\cs_new:Npo \@@_replace_group:nnnnnNn #1#2#3#4#5#6#7
   {
     \etl_if_eq:nnTF {#1} {#7}
       {
@@ -1899,7 +1899,7 @@ and the derived files           etl.pdf
       }
       { \@@_replace_put_back:nnnN { #4 {#7} } {#3} {#5} #6 }
   }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group_false:nnnNn #1#2#3#4#5 }
+\cs_new:Npo \@@_replace_group_false:nnnNn #1#2#3#4#5
   { \@@_replace_put_back:nnnN { #2 {#5} } {#1} {#3} {#4} }
 \cs_new:Npn \@@_replace_final:nn #1 { \@@_replace_final:nnnnNn #1 }
 \cs_new:Npn \@@_replace_final:nnnnNn #1#2#3#4#5#6 { \@@_unexpanded:w { #6#3 } }
@@ -1920,7 +1920,7 @@ and the derived files           etl.pdf
 %   The |deep| variant works again pretty much the same as the |all| variant,
 %   except that it searches groups recursively.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_replace_all_deep:nnn #1#2#3 }
+\cs_new:Npo \etl_replace_all_deep:nnn #1#2#3
   {
     \etl_act:nnnnnn
       \@@_replace_normal:nN
@@ -1932,7 +1932,7 @@ and the derived files           etl.pdf
   }
 \cs_new:Npn \@@_replace_group_deep:nn #1
   { \@@_replace_group_deep:nnnnNn #1 }
-\exp_args:Nno \use:n { \cs_new:Npn \@@_replace_group_deep:nnnnNn #1 }
+\cs_new:Npo \@@_replace_group_deep:nnnnNn #1
   {
     \@@_if_head_is_group:nTF {#1}
       {
@@ -1980,7 +1980,7 @@ and the derived files           etl.pdf
 %   And this is the same as the |all| variant except that we now use the
 %   \cs{@@_act_unexpanded_rest:w} marker inside the status.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new:Npn \etl_replace_once:nnn #1#2#3 }
+\cs_new:Npo \etl_replace_once:nnn #1#2#3
   {
     \etl_act:nnnnnn
       \@@_replace_normal:nN
@@ -2132,7 +2132,7 @@ and the derived files           etl.pdf
 %   time is necessary. We use a small loop to get a unique auxiliary macro name
 %   for the search text.
 %    \begin{macrocode}
-\exp_args:Nno \use:n { \cs_new_protected:Npn \etl_new_if_in:Nnn #1#2#3 }
+\cs_new_protected:Npn \etl_new_if_in:Nnn #1#2#3
   {
     \scan_stop:
     \if_false: { \fi:
