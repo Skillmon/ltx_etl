@@ -680,7 +680,7 @@ and the derived files           etl.pdf
 %   containing one or more of |p|, |T|, |F| and |TF| (just like for
 %   \cs{prg_new_conditional:Npnn}). The \meta{search text} must not contain
 %   tokens with category code~1 or 2 (normally |{}|) and can't contain macro
-%   parameter tokens (normally |#|). 
+%   parameter tokens (normally |#|).
 %   Unlike for the conditionals in \autoref{sec:conditionals}, the \meta{search
 %   text} of functions created with \cs{etl_new_if_in:Nnn} might contain
 %   \cs{s__etl_stop} tokens.
@@ -743,7 +743,7 @@ and the derived files           etl.pdf
 % \etl_new_replace_all:Nn \my_replace_C_all:nn { C }
 % \my_replace_C_all:nn { ACDC } { c }
 % \end{verbatim}
-% 
+%
 %
 % \subsection{Bugs and Feature Requests}
 %
@@ -799,11 +799,10 @@ and the derived files           etl.pdf
 %
 % \subsection{Variables}
 %
-% \begin{variable}{\s_@@_stop,\s_@@_mark}
+% \begin{variable}{\s_@@_stop}
 %   Scan marks.
 %    \begin{macrocode}
 \scan_new:N \s_@@_stop
-\scan_new:N \s_@@_mark
 %    \end{macrocode}
 % \end{variable}
 %
@@ -902,7 +901,7 @@ and the derived files           etl.pdf
 % \end{macro}
 %
 %
-% \subsection{The \texttt{act} loop} 
+% \subsection{The \texttt{act} loop}
 %
 % \begin{macro}[EXP]{\etl_act:nnnnnnn,\etl_act:nnnnnn,\etl_act:nnnnn}
 % \begin{macro}[EXP]{\@@_act:nnnnnnn,\@@_act_braced:nnnnnnn}
@@ -1994,13 +1993,13 @@ and the derived files           etl.pdf
 % \end{macro}
 %
 %
-% \begin{macro}[EXP]{\etl_token_split:nN}
+% \begin{macro}[EXP]{\etl_token_split:nN, \etl_token_split_ignore_blanks:nN}
 % \begin{macro}[EXP]
 %   {
-%     \@@_token_split_switch_keep_spaces:N,
-%     \@@_token_split_switch_ignore_spaces:N
+%     \@@_token_split_switch_keep_spaces:NN,
+%     \@@_token_split_switch_ignore_spaces:NN
 %   }
-% \begin{macro}[EXP]{\@@_token_split_first:NnN, \@@_token_split:NnN}
+% \begin{macro}[EXP]{\@@_token_split_first:NNnN, \@@_token_split:NNnN}
 % \begin{macro}[EXP]{\@@_token_split_space:n}
 %   The basic idea of \cs{etl_token_split:nN} is to put braces around each
 %   item using brace hacks. Since we also want to trim spaces we don't output
@@ -2014,10 +2013,24 @@ and the derived files           etl.pdf
 \cs_new:Npo \etl_token_split:nN #1#2
   {
     \@@_act_braced:nnnnnnn
-      { \@@_token_split_first:NnN #2 }
+      { \@@_token_split_first:NNnN \use:n #2 }
       \use_none:n
       {
-        \@@_token_split_switch_keep_spaces:N #2
+        \@@_token_split_switch_keep_spaces:NN \use:n #2
+        \@@_act_unexpanded_group:nn
+      }
+      \use_none:nn
+      {}
+      {}
+      {#1}
+  }
+\cs_new:Npo \etl_token_split_ignore_blanks:nN #1#2
+  {
+    \@@_act_braced:nnnnnnn
+      { \@@_token_split_first:NNnN \use_none:n #2 }
+      \use_none:n
+      {
+        \@@_token_split_switch_keep_spaces:NN \use_none:n #2
         \@@_act_unexpanded_group:nn
       }
       \use_none:nn
@@ -2032,20 +2045,20 @@ and the derived files           etl.pdf
 %   we store these two states in macros doing the necessary
 %   \cs{etl_act_switch:nnn} calls.
 %    \begin{macrocode}
-\cs_new:Npn \@@_token_split_switch_ignore_spaces:N #1
+\cs_new:Npn \@@_token_split_switch_ignore_spaces:NN #1#2
   {
     \etl_act_switch:nnn
-      { \@@_token_split_first:NnN #1 }
+      { \@@_token_split_first:NNnN #1#2 }
       \use_none:n
       {
-        \@@_token_split_switch_keep_spaces:N #1
+        \@@_token_split_switch_keep_spaces:NN #1#2
         \@@_act_unexpanded_group:nn
       }
   }
-\cs_new:Npn \@@_token_split_switch_keep_spaces:N #1
+\cs_new:Npn \@@_token_split_switch_keep_spaces:NN #1#2
   {
     \etl_act_switch:nnn
-      { \@@_token_split:NnN #1 }
+      { \@@_token_split:NNnN #1#2 }
       \@@_token_split_space:n
       { \use_ii_i:nn { \etl_act_status:n {} \@@_act_unexpanded_group:nn {} } }
   }
@@ -2057,25 +2070,25 @@ and the derived files           etl.pdf
 %   remove the processed spaces (either they were dropped because we're at the
 %   end of the current item or they were output).
 %    \begin{macrocode}
-\cs_new:Npo \@@_token_split_first:NnN #1#2#3
+\cs_new:Npo \@@_token_split_first:NNnN #1#2#3#4
   {
-    \etl_token_if_eq:NNTF {#1} {#3}
-      { \if_false: { \fi: } { \if_false: } \fi: }
+    \etl_token_if_eq:NNTF {#2} {#4}
+      { #1 { \if_false: { \fi: } { \if_false: } \fi: } }
       {
-        \@@_unexpanded:w {#3}
-        \@@_token_split_switch_keep_spaces:N #1
+        \@@_unexpanded:w {#4}
+        \@@_token_split_switch_keep_spaces:NN #1#2
       }
   }
-\cs_new:Npo \@@_token_split:NnN #1#2#3
+\cs_new:Npo \@@_token_split:NNnN #1#2#3#4
   {
-    \etl_token_if_eq:NNTF {#1} {#3}
+    \etl_token_if_eq:NNTF {#2} {#4}
       {
         \if_false: { \fi: } { \if_false: } \fi:
-        \@@_token_split_switch_ignore_spaces:N #1
+        \@@_token_split_switch_ignore_spaces:NN #1#2
       }
       {
-        #2
-        \@@_unexpanded:w {#3}
+        #3
+        \@@_unexpanded:w {#4}
       }
     \etl_act_status:n {}
   }
